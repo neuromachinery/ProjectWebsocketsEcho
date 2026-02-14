@@ -15,6 +15,7 @@ def host_reg(websocket,info=None):
     if not res:
         HOST_DICT[host_id] = {"websocket":websocket,**info}
         HOST_REL_DICT[host_id]=dict()
+        print(HOST_DICT[host_id])
         return True
     print("fuck",end="")
     return False
@@ -25,8 +26,7 @@ def client_reg(websocket, host_id=None):
     if res!=None:
         client_id = str(websocket.id)
         HOST_REL_DICT[host_id][client_id] = websocket
-        host_websocket = HOST_DICT[host_id]["websocket"]
-        CLIENT_REL_DICT[client_id] = {host_id:host_websocket}
+        CLIENT_REL_DICT[client_id] = {host_id:HOST_DICT[host_id]["websocket"]}
         CLIENT_DICT[client_id] = {"websocket":websocket,}
         return True
     print("fuck",end="")
