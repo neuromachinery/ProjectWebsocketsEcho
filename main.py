@@ -38,6 +38,10 @@ def send(websocket, message=None):
     return False
 def get_hosts(websocket,_=None):
     print("get_host")
+    result = {}
+    for key,val in HOST_DICT.items():
+        val.pop("websocket")
+        result[key]=val
     MESSAGE_QUEUE.put_nowait(websocket.send(dumps(HOST_DICT)))
 async def handle_messages():
     while True:
