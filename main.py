@@ -38,7 +38,8 @@ def send(websocket, message=None):
     if res:
         for subscriber in res:
             sub = next(item for item in (HOST_DICT.get(subscriber,False),CLIENT_DICT.get(subscriber,False)) if item is not None)
-            MESSAGE_QUEUE.put_nowait(sub.websocket.send(dumps({"type":"message","message":message})))
+            if sub:
+                MESSAGE_QUEUE.put_nowait(sub.websocket.send(dumps({"type":"message","message":message})))
         print("yey")
         return True
     print("fuck",end="")
@@ -76,7 +77,7 @@ async def handle_connection(websocket):
         del_id = str(websocket.id)
         if res:=CLIENT_DICT.get(del_id,None):HOST_REL_DICT[res].pop(del_id,None)
         if res:=HOST_DICT.get(del_id,None):
-            for client,server in CLIENT_REL_DICT.items():
+            for client,server in CLIENT_REL_DICT.copy().items():
                 if server==del_id:CLIENT_REL_DICT.pop(client)
         for dict_for_del in (HOST_DICT,HOST_REL_DICT,CLIENT_DICT,CLIENT_REL_DICT):
             dict_for_del.pop(del_id,None)
