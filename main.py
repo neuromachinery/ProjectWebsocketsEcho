@@ -33,7 +33,7 @@ def client_reg(websocket, host_id=None):
 def send(websocket, message=None):
     print("send")
     user_id = str(websocket.id)
-    res = next(item for item in (HOST_REL_DICT.get(user_id,False),CLIENT_REL_DICT.get(user_id,False)) if item is not None)
+    res = next(item for item in (HOST_REL_DICT.get(user_id,None),CLIENT_REL_DICT.get(user_id,None),False) if item is not None)
     print(user_id,message,HOST_REL_DICT,CLIENT_REL_DICT,res)
     if res:
         for sub_id,sub_ws in res.items():
