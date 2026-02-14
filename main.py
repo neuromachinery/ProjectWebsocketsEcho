@@ -45,11 +45,11 @@ async def handle_messages():
         print("sent message")
 async def handle_connection(websocket):
     try:
-        print(type(websocket),dir(websocket),websocket)
+        print(websocket.id)
         async for message in websocket:
             print(message)
             message = loads(message)
-            if not COMMANDS[message["type"]](message["message"]):
+            if not COMMANDS[message["type"]](websocket,message["message"]):
                 await websocket.send(dumps({"type":"fuck_off","message":"wtf do you want"}))
     finally:
         del_id = websocket.id
