@@ -48,9 +48,12 @@ def get_hosts(websocket,_=None):
     print("get_host")
     if (len(HOST_DICT.keys())==0): return False
     result = {}
-    for key,val in HOST_DICT.items():
-        if key=="websocket": continue
-        result[key]=val 
+    for key1,val1 in HOST_DICT.items():
+        val = {}
+        for key2,val2 in val1.items():
+            if key2=="websocket": continue
+            val[key2] = val2
+        result[key1]=val 
     print(result)
     MESSAGE_QUEUE.put_nowait(websocket.send(dumps(result,ensure_ascii=False)))
     return True
