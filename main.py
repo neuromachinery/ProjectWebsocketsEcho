@@ -5,7 +5,7 @@ import queue
 from json import dumps, loads
 HOST_REL_DICT = {}
 HOST_DICT = {}
-CLIENT_REL_DICT = {}
+CLIENT_REL_DICT = {{}}
 CLIENT_DICT = {}
 MESSAGE_QUEUE = queue.Queue()
 def host_reg(websocket,info=None):
@@ -25,7 +25,7 @@ def client_reg(websocket, host_id=None):
     if res!=None:
         client_id = str(websocket.id)
         HOST_REL_DICT[host_id][client_id] = websocket
-        CLIENT_REL_DICT[client_id][host_id] = websocket
+        CLIENT_REL_DICT[client_id] = {host_id:websocket}
         CLIENT_DICT[client_id] = {"websocket":websocket,}
         return True
     print("fuck",end="")
@@ -34,7 +34,7 @@ def send(websocket, message=None):
     print("send")
     user_id = str(websocket.id)
     res = next(item for item in (HOST_REL_DICT.get(user_id,False),CLIENT_REL_DICT.get(user_id,False)) if item is not None)
-    print(message,HOST_REL_DICT,CLIENT_REL_DICT,res)
+    print(user_id,message,HOST_REL_DICT,CLIENT_REL_DICT,res)
     if res:
         for sub_id,sub_ws in res:
             print(f"sending to {sub_id}")
