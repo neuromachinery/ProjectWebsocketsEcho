@@ -38,7 +38,7 @@ def send(websocket, message=None):
     if res:
         for sub_id,sub_ws in res.items():
             print(f"sending to {sub_id}")
-            MESSAGE_QUEUE.put_nowait(sub_ws.send(dumps({"type":"message","message":message},ensure_ascii=False).encode('utf-8')))
+            MESSAGE_QUEUE.put_nowait(sub_ws.send(dumps({"type":"message","message":message},ensure_ascii=False)))
         print("yey")
         return True
     print("fuck",end="")
@@ -51,7 +51,7 @@ def get_hosts(websocket,_=None):
         val.pop("websocket")
         result[key]=val
     print(result)
-    MESSAGE_QUEUE.put_nowait(websocket.send(dumps(result,ensure_ascii=False).encode('utf-8')))
+    MESSAGE_QUEUE.put_nowait(websocket.send(dumps(result,ensure_ascii=False)))
     return True
 def handle_messages(queue:queue):
     async def handle():
@@ -71,7 +71,7 @@ async def handle_connection(websocket):
             message = loads(message)
             if not COMMANDS[message["type"]](websocket,message.get("message",None)):
                 print("off")
-                await websocket.send(dumps({"type":"fuck_off","message":"wtf do you want"},ensure_ascii=False).encode('utf-8'))
+                await websocket.send(dumps({"type":"fuck_off","message":"wtf do you want"},ensure_ascii=False))
     finally:
         del_id = str(websocket.id)
         if res:=CLIENT_DICT.get(del_id,None):HOST_REL_DICT[res].pop(del_id,None)
