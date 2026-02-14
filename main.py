@@ -36,7 +36,7 @@ def send(websocket, message=None):
     res = next(item for item in (HOST_REL_DICT.get(user_id,False),CLIENT_REL_DICT.get(user_id,False)) if item is not None)
     print(user_id,message,HOST_REL_DICT,CLIENT_REL_DICT,res)
     if res:
-        for sub_id,sub_ws in res:
+        for sub_id,sub_ws in res.items():
             print(f"sending to {sub_id}")
             MESSAGE_QUEUE.put_nowait(sub_ws.send(dumps({"type":"message","message":message})))
         print("yey")
