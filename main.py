@@ -51,7 +51,7 @@ def get_hosts(websocket,_=None):
         val.pop("websocket")
         result[key]=val
     print(result)
-    MESSAGE_QUEUE.put_nowait(websocket.send(dumps(result),ensure_ascii=False).encode('utf-8'))
+    MESSAGE_QUEUE.put_nowait(websocket.send(dumps(result,ensure_ascii=False).encode('utf-8')))
     return True
 def handle_messages(queue:queue):
     async def handle():
