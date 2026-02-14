@@ -8,44 +8,48 @@ HOST_DICT = {}
 CLIENT_REL_DICT = {}
 CLIENT_DICT = {}
 MESSAGE_QUEUE = queue.Queue()
+LOG_LEVEL = 0
+def log(*args):
+    if LOG_LEVEL==1:
+        print(args)
 def host_reg(websocket,info=None):
-    print("host_reg")
+    log("host_reg")
     host_id = str(websocket.id)
     res = HOST_REL_DICT.get(host_id,None)
     if not res:
         HOST_DICT[host_id] = {"websocket":websocket,**info}
         HOST_REL_DICT[host_id]=dict()
-        print(HOST_DICT[host_id])
+        log(HOST_DICT[host_id])
         return True
-    print("fuck",end="")
+    log("fuck",end="")
     return False
 def client_reg(websocket, host_id=None):
-    print("client_reg")
+    log("client_reg")
     res = HOST_REL_DICT.get(host_id,None)
-    print(f"host id:{host_id},\nhost_rel:{HOST_REL_DICT},\nhost_dict:{HOST_DICT},\nres:{res}")
+    log(f"host id:{host_id},\nhost_rel:{HOST_REL_DICT},\nhost_dict:{HOST_DICT},\nres:{res}")
     if res!=None:
         client_id = str(websocket.id)
         HOST_REL_DICT[host_id][client_id] = websocket
         CLIENT_REL_DICT[client_id] = {host_id:HOST_DICT[host_id]["websocket"]}
         CLIENT_DICT[client_id] = {"websocket":websocket,}
         return True
-    print("fuck",end="")
+    log("fuck",end="")
     return False
 def send(websocket, message=None):
-    print("send")
+    log("send")
     user_id = str(websocket.id)
     res = next(item for item in (HOST_REL_DICT.get(user_id,None),CLIENT_REL_DICT.get(user_id,None),False) if item is not None)
-    print(f"user_id:{user_id},\nmessage{message},\nhost_rel:{HOST_REL_DICT},\ncli_rel:{CLIENT_REL_DICT},\nres:{res}")
+    log(f"user_id:{user_id},\nmessage{message},\nhost_rel:{HOST_REL_DICT},\ncli_rel:{CLIENT_REL_DICT},\nres:{res}")
     if res:
         for sub_id,sub_ws in res.items():
-            print(f"sending to {sub_id}")
+            log(f"sending to {sub_id}")
             MESSAGE_QUEUE.put_nowait(sub_ws.send(dumps({"type":"message","message":message},ensure_ascii=False)))
-        print("yey")
+        log("yey")
         return True
-    print("fuck",end="")
+    log("fuck",end="")
     return False
 def get_hosts(websocket,_=None):
-    print("get_host")
+    log("get_host")
     if (len(HOST_DICT.keys())==0): return False
     result = {}
     for key1,val1 in HOST_DICT.items():
@@ -54,27 +58,27 @@ def get_hosts(websocket,_=None):
             if key2=="websocket": continue
             val[key2] = val2
         result[key1]=val 
-    print(result)
+    log(result)
     MESSAGE_QUEUE.put_nowait(websocket.send(dumps(result,ensure_ascii=False)))
     return True
 def handle_messages(queue:queue):
     async def handle():
-        print("message handler started")
+        log("message handler started")
         while True:
-            print("waiting for message")
+            log("waiting for message")
             await queue.get()
-            print("sent message")
+            log("sent message")
     asyncio.run(handle())
     
         
 async def handle_connection(websocket):
     try:
-        print()
+        log()
         async for message in websocket:
-            print(f"{str(websocket.id)} -> {message}")
+            log(f"{str(websocket.id)} -> {message}")
             message = loads(message)
             if not COMMANDS[message["type"]](websocket,message.get("message",None)):
-                print("off")
+                log("off")
                 await websocket.send(dumps({"type":"fuck_off","message":"wtf do you want"},ensure_ascii=False))
     finally:
         del_id = str(websocket.id)
