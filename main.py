@@ -84,7 +84,7 @@ COMMANDS = {
 async def main():
     async with websockets.serve(handle_connection, "0.0.0.0", 8766):
         await asyncio.Future()
-    await handle_messages()
+        await handle_messages()
 
 if __name__ == "__main__":
     asyncio.run(main())
