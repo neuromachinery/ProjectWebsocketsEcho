@@ -9,7 +9,7 @@ CLIENT_DICT = {}
 MESSAGE_QUEUE = queue.Queue()
 def host_reg(websocket,info=None):
     print("host_reg")
-    host_id = hash(websocket)
+    host_id = websocket.id
     res = HOST_REL_DICT.get(host_id,None)
     if not res:
         HOST_DICT[host_id] = {"websocket":websocket,**info}
@@ -20,7 +20,7 @@ def client_reg(websocket, host_id=None):
     print("client_reg")
     res = HOST_REL_DICT.get(host_id,None)
     if res:
-        client_id = hash(websocket)
+        client_id = websocket.id
         HOST_REL_DICT[host_id][client_id] = websocket
         CLIENT_REL_DICT[client_id] = host_id
         CLIENT_DICT[client_id] = {"websocket":websocket,}
@@ -28,7 +28,7 @@ def client_reg(websocket, host_id=None):
     return False
 def send(websocket, message=None):
     print("send")
-    user_id = hash(websocket)
+    user_id = websocket.id
     res = next(item for item in (HOST_REL_DICT.get(user_id,False),CLIENT_REL_DICT.get(user_id,False)) if item is not None)
     if res:
         for subscriber in res:
@@ -50,7 +50,7 @@ async def handle_connection(websocket):
             if not COMMANDS[message["type"]](message["message"]):
                 await websocket.send(dumps({"type":"fuck_off","message":"wtf do you want"}))
     finally:
-        del_id = hash(websocket)
+        del_id = websocket.id
         if res:=CLIENT_DICT.get(del_id,None):HOST_REL_DICT[res].pop(del_id,None)
         if res:=HOST_DICT.get(del_id,None):
             for client,server in CLIENT_REL_DICT.items():
