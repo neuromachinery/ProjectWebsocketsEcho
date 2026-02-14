@@ -5,7 +5,7 @@ import queue
 from json import dumps, loads
 HOST_REL_DICT = {}
 HOST_DICT = {}
-CLIENT_REL_DICT = {{}}
+CLIENT_REL_DICT = {}
 CLIENT_DICT = {}
 MESSAGE_QUEUE = queue.Queue()
 def host_reg(websocket,info=None):
