@@ -25,7 +25,7 @@ def client_reg(websocket, host_id=None):
     if res!=None:
         client_id = str(websocket.id)
         HOST_REL_DICT[host_id][client_id] = websocket
-        CLIENT_REL_DICT[client_id] = {host_id:websocket}
+        CLIENT_REL_DICT[client_id] = {host_id:HOST_DICT[host_id]["websocket"]}
         CLIENT_DICT[client_id] = {"websocket":websocket,}
         return True
     print("fuck",end="")
@@ -34,7 +34,7 @@ def send(websocket, message=None):
     print("send")
     user_id = str(websocket.id)
     res = next(item for item in (HOST_REL_DICT.get(user_id,None),CLIENT_REL_DICT.get(user_id,None),False) if item is not None)
-    print(user_id,message,HOST_REL_DICT,CLIENT_REL_DICT,res)
+    print(f"user_id:{user_id},\nmessage{message},\nhost_rel:{HOST_REL_DICT},\ncli_rel:{CLIENT_REL_DICT},\nres:{res}")
     if res:
         for sub_id,sub_ws in res.items():
             print(f"sending to {sub_id}")
