@@ -44,7 +44,7 @@ def send(websocket, message=None):
     return False
 def get_hosts(websocket,_=None):
     print("get_host")
-    if len(HOST_DICT.keys()==0): return False
+    if (len(HOST_DICT.keys())==0): return False
     result = {}
     for key,val in HOST_DICT.items():
         val.pop("websocket")
