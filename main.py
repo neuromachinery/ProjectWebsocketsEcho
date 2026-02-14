@@ -88,7 +88,7 @@ COMMANDS = {
     "SEND":send,
     "GET_HOSTS":get_hosts
     }
-message_handler = threading.Thread(target=handle_messages,args=(MESSAGE_QUEUE,))
+message_handler = threading.Thread(target=handle_messages,args=(MESSAGE_QUEUE,),daemon=True)
 async def main():
     async with websockets.serve(handle_connection, "0.0.0.0", 8766):
         await asyncio.Future()
