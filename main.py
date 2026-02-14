@@ -48,7 +48,7 @@ def get_hosts(websocket,_=None):
     print("get_host")
     if (len(HOST_DICT.keys())==0): return False
     result = {}
-    for key,val in HOST_DICT.items():
+    for key,val in HOST_DICT.copy().items():
         val.pop("websocket")
         result[key]=val
     print(result)
