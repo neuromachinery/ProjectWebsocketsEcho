@@ -65,9 +65,9 @@ def handle_messages(queue:queue):
         
 async def handle_connection(websocket):
     try:
-        print(str(websocket.id))
+        print()
         async for message in websocket:
-            print(message)
+            print(f"{str(websocket.id)} -> {message}")
             message = loads(message)
             if not COMMANDS[message["type"]](websocket,message.get("message",None)):
                 print("off")
