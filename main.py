@@ -20,6 +20,7 @@ def host_reg(websocket,info=None):
 def client_reg(websocket, host_id=None):
     print("client_reg")
     res = HOST_REL_DICT.get(host_id,None)
+    print(host_id,HOST_REL_DICT,res)
     if res:
         client_id = str(websocket.id)
         HOST_REL_DICT[host_id][client_id] = websocket
@@ -32,6 +33,7 @@ def send(websocket, message=None):
     print("send")
     user_id = str(websocket.id)
     res = next(item for item in (HOST_REL_DICT.get(user_id,False),CLIENT_REL_DICT.get(user_id,False)) if item is not None)
+    print(message,HOST_REL_DICT,CLIENT_REL_DICT,res)
     if res:
         for subscriber in res:
             sub = next(item for item in (HOST_DICT.get(subscriber,False),CLIENT_DICT.get(subscriber,False)) if item is not None)
@@ -42,11 +44,14 @@ def send(websocket, message=None):
     return False
 def get_hosts(websocket,_=None):
     print("get_host")
+    if len(HOST_DICT.keys()==0): return False
     result = {}
     for key,val in HOST_DICT.items():
         val.pop("websocket")
         result[key]=val
-    MESSAGE_QUEUE.put_nowait(websocket.send(dumps(HOST_DICT)))
+    print(result)
+    MESSAGE_QUEUE.put_nowait(websocket.send(dumps(result)))
+    return True
 async def handle_messages():
     while True:
         await MESSAGE_QUEUE.get()
