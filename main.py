@@ -22,7 +22,7 @@ def client_reg(websocket, host_id=None):
     print("client_reg")
     res = HOST_REL_DICT.get(host_id,None)
     print(host_id,HOST_REL_DICT,res)
-    if res:
+    if res!=None:
         client_id = str(websocket.id)
         HOST_REL_DICT[host_id][client_id] = websocket
         CLIENT_REL_DICT[client_id] = host_id
