@@ -15,6 +15,7 @@ def host_reg(websocket,info=None):
         HOST_DICT[host_id] = {"websocket":websocket,**info}
         HOST_REL_DICT[host_id]=dict()
         return True
+    print("fuck",end="")
     return False
 def client_reg(websocket, host_id=None):
     print("client_reg")
@@ -25,6 +26,7 @@ def client_reg(websocket, host_id=None):
         CLIENT_REL_DICT[client_id] = host_id
         CLIENT_DICT[client_id] = {"websocket":websocket,}
         return True
+    print("fuck",end="")
     return False
 def send(websocket, message=None):
     print("send")
@@ -34,7 +36,9 @@ def send(websocket, message=None):
         for subscriber in res:
             sub = next(item for item in (HOST_DICT.get(subscriber,False),CLIENT_DICT.get(subscriber,False)) if item is not None)
             MESSAGE_QUEUE.put_nowait(sub.websocket.send(dumps({"type":"message","message":message})))
+        print("yey")
         return True
+    print("fuck",end="")
     return False
 def get_hosts(websocket,_=None):
     print("get_host")
@@ -54,6 +58,7 @@ async def handle_connection(websocket):
             print(message)
             message = loads(message)
             if not COMMANDS[message["type"]](websocket,message.get("message",None)):
+                print("off")
                 await websocket.send(dumps({"type":"fuck_off","message":"wtf do you want"}))
     finally:
         del_id = str(websocket.id)
