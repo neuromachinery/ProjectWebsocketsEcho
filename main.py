@@ -1,4 +1,5 @@
 import asyncio
+import threading
 import websockets
 import queue
 from json import dumps, loads
@@ -52,10 +53,16 @@ def get_hosts(websocket,_=None):
     print(result)
     MESSAGE_QUEUE.put_nowait(websocket.send(dumps(result)))
     return True
-async def handle_messages():
-    while True:
-        await MESSAGE_QUEUE.get()
-        print("sent message")
+def handle_messages():
+    async def handle():
+        print("message handler started")
+        while True:
+            print("waiting for message")
+            await MESSAGE_QUEUE.get()
+            print("sent message")
+    asyncio.run(handle())
+    
+        
 async def handle_connection(websocket):
     try:
         print(str(websocket.id))
@@ -81,10 +88,12 @@ COMMANDS = {
     "SEND":send,
     "GET_HOSTS":get_hosts
     }
+message_handler = threading.Thread(handle_messages)
 async def main():
     async with websockets.serve(handle_connection, "0.0.0.0", 8766):
         await asyncio.Future()
-        await handle_messages()
+        
 
 if __name__ == "__main__":
+    message_handler.start()
     asyncio.run(main())
