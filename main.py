@@ -12,12 +12,12 @@ CLIENT_RELATIONAL_DICTIONARY = {}
 CLIENT_REGISTRATION_DICTIONARY = {}
 DICTIONARIES = (HOST_RELATIONAL_DICTIONARY,HOST_REGISTRATION_DICTIONARY,CLIENT_REGISTRATION_DICTIONARY,CLIENT_RELATIONAL_DICTIONARY)
 MESSAGE_QUEUE = queue.Queue()
-LOG_LEVEL = 0
+LOG_LEVEL = 1
 def log(*args,**kwargs):
     if LOG_LEVEL==1:
         with open(LOGFILE,"a",encoding="utf-8") as file:
             file.write(f"[{time()}] args:({str(args)})\nkwargs:({str(kwargs)})\n\n")
-        print(*args,**kwargs)
+        log(*args,**kwargs)
 def host_reg(websocket,info=None):
     'message -> info in format {key:val,key:val,...}; not necessary; will fail if already registered.'
     log("host_reg")
@@ -72,7 +72,7 @@ def get_hosts(websocket,_=None):
         log(result)
         echo(websocket,dumps(result,ensure_ascii=False))
     except Exception as E:
-        print(str(E))
+        log(str(E))
         return False
     return True
 def get_clients(websocket,_=None):
@@ -84,7 +84,7 @@ def get_clients(websocket,_=None):
         log(result)
         echo(websocket,dumps(result,ensure_ascii=False))
     except Exception as E:
-        print(str(E))
+        log(str(E))
         return False
     return True
 def info_change(websocket,info=None):
@@ -97,7 +97,7 @@ def info_change(websocket,info=None):
         log(HOST_REGISTRATION_DICTIONARY[host_id])
 
     except Exception as E:
-        print(str(E))
+        log(str(E))
         return False
     return True
 def disconnect(websocket,message):
@@ -115,7 +115,7 @@ def disconnect(websocket,message):
         for dict_for_del in DICTIONARIES:
             dict_for_del.pop(del_id,None)
     except Exception as E:
-        print("CRASH",str(E),type(E))
+        log("CRASH",str(E),type(E))
         return False
     return True
 def echo(websocket,message=None):
@@ -158,7 +158,7 @@ def handle_messages(queue:queue):
                     log("sent message")
             asyncio.run(handle())
         except Exception as E:
-            print("CRASH",str(E),type(E))
+            log("CRASH",str(E),type(E))
     
 
 async def handle_connection(websocket):
@@ -174,16 +174,16 @@ async def handle_connection(websocket):
         except websockets.ConnectionClosedError:
             log("disconnect")
         except Exception as E:
-            print("CRASH",str(E),type(E))
+            log("CRASH",str(E),type(E))
         finally:
             try:
                 disconnect(websocket,f"{'type':'disconnect','message':{str(websocket.id)}}")
                 await websocket.close()
             except TypeError:
                 del_id = str(websocket.id)
-                print(del_id,CLIENT_REGISTRATION_DICTIONARY,HOST_RELATIONAL_DICTIONARY,CLIENT_REGISTRATION_DICTIONARY.get(del_id,None))
+                log(del_id,CLIENT_REGISTRATION_DICTIONARY,HOST_RELATIONAL_DICTIONARY,CLIENT_REGISTRATION_DICTIONARY.get(del_id,None))
             except Exception as E:
-                print("CRASH",str(E),type(E))
+                log("CRASH",str(E),type(E))
 
 COMMANDS = {
     "HOST_REG":host_reg,
@@ -207,7 +207,7 @@ async def main():
             async with websockets.serve(handle_connection, "0.0.0.0", 8766):
                 await asyncio.Future()
         except Exception as E:
-            print("CRASH",str(E),type(E))
+            log("CRASH",str(E),type(E))
         
 
 if __name__ == "__main__":
