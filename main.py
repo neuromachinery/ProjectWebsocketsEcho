@@ -49,17 +49,20 @@ def send(websocket, message=None):
 
     return False
 def get_hosts(websocket,_=None):
-    log("get_host")
-    if (len(HOST_DICT.keys())==0): return False
-    result = {"type":"hosts","message":dict()}
-    for key1,val1 in HOST_DICT.items():
-        val = {}
-        for key2,val2 in val1.items():
-            if key2=="websocket": continue
-            val[key2] = val2
-        result["message"] = {key1:val}
-    log(result)
-    MESSAGE_QUEUE.put_nowait(websocket.send(dumps(result,ensure_ascii=False)))
+    try:
+        log("get_host")
+        result = {"type":"hosts","message":dict()}
+        for key1,val1 in HOST_DICT.items():
+            val = {}
+            for key2,val2 in val1.items():
+                if key2=="websocket": continue
+                val[key2] = val2
+            result["message"] = {key1:val}
+        log(result)
+        MESSAGE_QUEUE.put_nowait(websocket.send(dumps(result,ensure_ascii=False)))
+    except Exception as E:
+        print(str(E))
+        return False
     return True
 def handle_messages(queue:queue):
     async def handle():
