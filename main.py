@@ -21,7 +21,7 @@ def host_reg(websocket,info=None):
         HOST_REL_DICT[host_id]=dict()
         log(HOST_DICT[host_id])
         return True
-    log("fuck",end="")
+
     return False
 def client_reg(websocket, host_id=None):
     log("client_reg")
@@ -33,7 +33,7 @@ def client_reg(websocket, host_id=None):
         CLIENT_REL_DICT[client_id] = {host_id:HOST_DICT[host_id]["websocket"]}
         CLIENT_DICT[client_id] = {"websocket":websocket,}
         return True
-    log("fuck",end="")
+
     return False
 def send(websocket, message=None):
     log("send")
@@ -46,7 +46,7 @@ def send(websocket, message=None):
             MESSAGE_QUEUE.put_nowait(sub_ws.send(dumps({"type":"message","message":message},ensure_ascii=False)))
         log("yey")
         return True
-    log("fuck",end="")
+
     return False
 def get_hosts(websocket,_=None):
     log("get_host")
@@ -78,7 +78,7 @@ async def handle_connection(websocket):
             log(f"{str(websocket.id)} -> {message}")
             message = loads(message)
             if not COMMANDS[message["type"]](websocket,message.get("message",None)):
-                log("off")
+                log("fuck off")
                 await websocket.send(dumps({"type":"fuck_off","message":"wtf do you want"},ensure_ascii=False))
     finally:
         del_id = str(websocket.id)
