@@ -17,7 +17,7 @@ def log(*args,**kwargs):
     if LOG_LEVEL!=0:
         with open(LOGFILE,"a",encoding="utf-8") as file:
             file.write(f"[{time()}] args:({str(args)})\nkwargs:({str(kwargs)})\n{'' if LOG_LEVEL<2 else DICTIONARIES}\n\n")
-        log(*args,**kwargs)
+        print(*args,**kwargs)
 def host_reg(websocket,info=None):
     'message -> info in format {key:val,key:val,...}; not necessary; will fail if already registered.'
     log("host_reg")
