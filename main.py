@@ -9,9 +9,9 @@ CLIENT_REL_DICT = {}
 CLIENT_DICT = {}
 MESSAGE_QUEUE = queue.Queue()
 LOG_LEVEL = 0
-def log(*args):
+def log(*args,**kwargs):
     if LOG_LEVEL==1:
-        print(args)
+        print(*args,**kwargs)
 def host_reg(websocket,info=None):
     log("host_reg")
     host_id = str(websocket.id)
@@ -80,6 +80,8 @@ async def handle_connection(websocket):
             if not COMMANDS[message["type"]](websocket,message.get("message",None)):
                 log("fuck off")
                 await websocket.send(dumps({"type":"fuck_off","message":"wtf do you want"},ensure_ascii=False))
+    except websockets.ConnectionClosedError:
+        log("disconnect")
     except Exception as E:
         print(type(E))
     finally:
@@ -92,6 +94,8 @@ async def handle_connection(websocket):
             for dict_for_del in (HOST_DICT,HOST_REL_DICT,CLIENT_DICT,CLIENT_REL_DICT):
                 dict_for_del.pop(del_id,None)
             await websocket.close()
+        except TypeError:
+            print(del_id,CLIENT_DICT,HOST_REL_DICT,CLIENT_DICT.get(del_id,None))
         except Exception as E:
             print(type(E))
 
