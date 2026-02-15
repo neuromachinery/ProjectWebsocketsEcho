@@ -79,7 +79,7 @@ async def handle_connection(websocket):
             message = loads(message)
             if not COMMANDS[message["type"]](websocket,message.get("message",None)):
                 log("fuck off")
-                await websocket.send(dumps({"type":"fuck_off","message":"wtf do you want"},ensure_ascii=False))
+                await websocket.send(dumps(dict()))
     except websockets.ConnectionClosedError:
         log("disconnect")
     except Exception as E:
