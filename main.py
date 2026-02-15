@@ -13,12 +13,13 @@ CLIENT_REGISTRATION_DICTIONARY = {}
 DICTIONARIES = (HOST_RELATIONAL_DICTIONARY,HOST_REGISTRATION_DICTIONARY,CLIENT_REGISTRATION_DICTIONARY,CLIENT_RELATIONAL_DICTIONARY)
 MESSAGE_QUEUE = queue.Queue()
 LOG_LEVEL = 0
-LOG_FILEDESCRIPTOR = open(LOGFILE,"x",encoding="utf-8") if not path.exists(LOGFILE) else open(LOGFILE,"a",encoding="utf-8")
 def log(*args,**kwargs):
     if LOG_LEVEL==1:
-        LOG_FILEDESCRIPTOR.write(f"[{time()}] args:({str(args)})\nkwargs:({str(kwargs)})\n\n")
+        with open(LOGFILE,"a",encoding="utf-8") as file:
+            file.write(f"[{time()}] args:({str(args)})\nkwargs:({str(kwargs)})\n\n")
         print(*args,**kwargs)
 def host_reg(websocket,info=None):
+    'message -> info in format {key:val,key:val,...}; not necessary; will fail if already registered.'
     log("host_reg")
     host_id = str(websocket.id)
     res = HOST_RELATIONAL_DICTIONARY.get(host_id,None)
@@ -30,6 +31,7 @@ def host_reg(websocket,info=None):
 
     return False
 def client_reg(websocket, host_id=None):
+    'TODO'
     log("client_reg")
     res = HOST_RELATIONAL_DICTIONARY.get(host_id,None)
     log(f"host id:{host_id},\nhost_rel:{HOST_RELATIONAL_DICTIONARY},\nhost_dict:{HOST_REGISTRATION_DICTIONARY},\nres:{res}")
@@ -43,6 +45,7 @@ def client_reg(websocket, host_id=None):
 
     return False
 def send(websocket, message=None):
+    'TODO'
     log("send")
     user_id = str(websocket.id)
     res = next(item for item in (HOST_RELATIONAL_DICTIONARY.get(user_id,None),CLIENT_RELATIONAL_DICTIONARY.get(user_id,None),False) if item is not None)
@@ -56,6 +59,7 @@ def send(websocket, message=None):
 
     return False
 def get_hosts(websocket,_=None):
+    'TODO'
     try:
         log("get_host")
         result = {"type":"hosts","message":dict()}
@@ -72,6 +76,7 @@ def get_hosts(websocket,_=None):
         return False
     return True
 def get_clients(websocket,_=None):
+    'TODO'
     try:
         log("get_clients")
         host_id = str(websocket.id)
@@ -83,6 +88,7 @@ def get_clients(websocket,_=None):
         return False
     return True
 def info_change(websocket,info=None):
+    'TODO'
     try:
         host_id = str(websocket.id)
         host_info = HOST_REGISTRATION_DICTIONARY.get(host_id,None)
@@ -95,6 +101,7 @@ def info_change(websocket,info=None):
         return False
     return True
 def disconnect(websocket,message):
+    'TODO'
     try:
         del_id = str(websocket.id)
         if CLIENT_REGISTRATION_DICTIONARY.get(del_id,None):
@@ -112,18 +119,19 @@ def disconnect(websocket,message):
         return False
     return True
 def echo(websocket,message=None):
+    'TODO'
     MESSAGE_QUEUE.put_nowait(websocket.send(message))
     return True
 def log_upload(websocket,message=None):
+    'TODO'
     seek,read = map(int,message.split(",")) if message else 0,-1
-    LOG_FILEDESCRIPTOR.close()
     with open(LOGFILE,"r",encoding="utf-8") as log_file:
         log_file.seek(seek)
         logs = log_file.read(read)
-    LOG_FILEDESCRIPTOR = open(LOGFILE,"a",encoding="utf-8")
     echo(websocket,logs)
     return True
-def info_upload(websocket,message=None):
+def info_upload(websocket,_=None):
+    'TODO'
     res = {
         "HOST_RELATIONAL":HOST_RELATIONAL_DICTIONARY,
         "HOST_REGISTRATION":HOST_REGISTRATION_DICTIONARY,
@@ -132,7 +140,13 @@ def info_upload(websocket,message=None):
         }
     echo(websocket,dumps(res))
     return True
-
+def man(websocket,_=None):
+    'TODO'
+    result = ""
+    for command,func in COMMANDS.items():
+        result+=f"'{command}'->'{func.__doc__}'\n"
+    echo(websocket,result)
+    return True
 def handle_messages(queue:queue):
     while True:
         try:
@@ -182,6 +196,7 @@ COMMANDS = {
     "INFO_CHANGE":info_change,
     "GIMME_LOGS":log_upload,
     "GIMME_INFO":info_upload,
+    "MAN":man,
     #"GLOBAL_BROADCAST":global_broadcast,
     #"LOCAL_BROADCAST":local_broadcast,
     }
