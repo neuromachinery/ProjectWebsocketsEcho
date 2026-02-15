@@ -80,15 +80,20 @@ async def handle_connection(websocket):
             if not COMMANDS[message["type"]](websocket,message.get("message",None)):
                 log("fuck off")
                 await websocket.send(dumps({"type":"fuck_off","message":"wtf do you want"},ensure_ascii=False))
+    except Exception as E:
+        print(type(E))
     finally:
-        del_id = str(websocket.id)
-        if res:=CLIENT_DICT.get(del_id,None):HOST_REL_DICT[res].pop(del_id,None)
-        if res:=HOST_DICT.get(del_id,None):
-            for client,server in CLIENT_REL_DICT.copy().items():
-                if server==del_id:CLIENT_REL_DICT.pop(client)
-        for dict_for_del in (HOST_DICT,HOST_REL_DICT,CLIENT_DICT,CLIENT_REL_DICT):
-            dict_for_del.pop(del_id,None)
-        await websocket.close()
+        try:
+            del_id = str(websocket.id)
+            if res:=CLIENT_DICT.get(del_id,None):HOST_REL_DICT[res].pop(del_id,None)
+            if res:=HOST_DICT.get(del_id,None):
+                for client,server in CLIENT_REL_DICT.copy().items():
+                    if server==del_id:CLIENT_REL_DICT.pop(client)
+            for dict_for_del in (HOST_DICT,HOST_REL_DICT,CLIENT_DICT,CLIENT_REL_DICT):
+                dict_for_del.pop(del_id,None)
+            await websocket.close()
+        except Exception as E:
+            print(type(E))
 
 COMMANDS = {
     "HOST_REG":host_reg,
