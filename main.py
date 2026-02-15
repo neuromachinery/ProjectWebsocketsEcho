@@ -3,47 +3,54 @@ import threading
 import websockets
 import queue
 from json import dumps, loads
-HOST_REL_DICT = {}
-HOST_DICT = {}
-CLIENT_REL_DICT = {}
-CLIENT_DICT = {}
+from os import path
+from time import time
+LOGFILE = "log.log"
+HOST_RELATIONAL_DICTIONARY = {}
+HOST_REGISTRATION_DICTIONARY = {}
+CLIENT_RELATIONAL_DICTIONARY = {}
+CLIENT_REGISTRATION_DICTIONARY = {}
+DICTIONARIES = (HOST_RELATIONAL_DICTIONARY,HOST_REGISTRATION_DICTIONARY,CLIENT_REGISTRATION_DICTIONARY,CLIENT_RELATIONAL_DICTIONARY)
 MESSAGE_QUEUE = queue.Queue()
 LOG_LEVEL = 0
+LOG_FILEDESCRIPTOR = open(LOGFILE,"x",encoding="utf-8") if not path.exists(LOGFILE) else open(LOGFILE,"a",encoding="utf-8")
 def log(*args,**kwargs):
     if LOG_LEVEL==1:
+        LOG_FILEDESCRIPTOR.write(f"[{time()}] args:({str(args)})\nkwargs:({str(kwargs)})\n\n")
         print(*args,**kwargs)
 def host_reg(websocket,info=None):
     log("host_reg")
     host_id = str(websocket.id)
-    res = HOST_REL_DICT.get(host_id,None)
+    res = HOST_RELATIONAL_DICTIONARY.get(host_id,None)
     if not res:
-        HOST_DICT[host_id] = {"websocket":websocket,**info}
-        HOST_REL_DICT[host_id]=dict()
-        log(HOST_DICT[host_id])
+        HOST_REGISTRATION_DICTIONARY[host_id] = {"websocket":websocket,**info}
+        HOST_RELATIONAL_DICTIONARY[host_id]=dict()
+        log(HOST_REGISTRATION_DICTIONARY[host_id])
         return True
 
     return False
 def client_reg(websocket, host_id=None):
     log("client_reg")
-    res = HOST_REL_DICT.get(host_id,None)
-    log(f"host id:{host_id},\nhost_rel:{HOST_REL_DICT},\nhost_dict:{HOST_DICT},\nres:{res}")
+    res = HOST_RELATIONAL_DICTIONARY.get(host_id,None)
+    log(f"host id:{host_id},\nhost_rel:{HOST_RELATIONAL_DICTIONARY},\nhost_dict:{HOST_REGISTRATION_DICTIONARY},\nres:{res}")
     if res!=None:
         client_id = str(websocket.id)
-        HOST_REL_DICT[host_id][client_id] = websocket
-        CLIENT_REL_DICT[client_id] = {host_id:HOST_DICT[host_id]["websocket"]}
-        CLIENT_DICT[client_id] = {"websocket":websocket,}
+        if CLIENT_RELATIONAL_DICTIONARY.get(client_id,None) == None:return False
+        HOST_RELATIONAL_DICTIONARY[host_id][client_id] = websocket
+        CLIENT_RELATIONAL_DICTIONARY[client_id] = {host_id:HOST_REGISTRATION_DICTIONARY[host_id]["websocket"]}
+        CLIENT_REGISTRATION_DICTIONARY[client_id] = {"websocket":websocket,}
         return True
 
     return False
 def send(websocket, message=None):
     log("send")
     user_id = str(websocket.id)
-    res = next(item for item in (HOST_REL_DICT.get(user_id,None),CLIENT_REL_DICT.get(user_id,None),False) if item is not None)
-    log(f"user_id:{user_id},\nmessage{message},\nhost_rel:{HOST_REL_DICT},\ncli_rel:{CLIENT_REL_DICT},\nres:{res}")
+    res = next(item for item in (HOST_RELATIONAL_DICTIONARY.get(user_id,None),CLIENT_RELATIONAL_DICTIONARY.get(user_id,None),False) if item is not None)
+    log(f"user_id:{user_id},\nmessage{message},\nhost_rel:{HOST_RELATIONAL_DICTIONARY},\ncli_rel:{CLIENT_RELATIONAL_DICTIONARY},\nres:{res}")
     if res:
         for sub_id,sub_ws in res.items():
             log(f"sending to {sub_id}")
-            MESSAGE_QUEUE.put_nowait(sub_ws.send(dumps({"type":"message","message":message},ensure_ascii=False)))
+            echo(sub_ws,dumps({"type":"message","message":message},ensure_ascii=False))
         log("yey")
         return True
 
@@ -52,18 +59,80 @@ def get_hosts(websocket,_=None):
     try:
         log("get_host")
         result = {"type":"hosts","message":dict()}
-        for key1,val1 in HOST_DICT.items():
+        for key1,val1 in HOST_REGISTRATION_DICTIONARY.items():
             val = {}
             for key2,val2 in val1.items():
                 if key2=="websocket": continue
                 val[key2] = val2
             result["message"] = {key1:val}
         log(result)
-        MESSAGE_QUEUE.put_nowait(websocket.send(dumps(result,ensure_ascii=False)))
+        echo(websocket,dumps(result,ensure_ascii=False))
     except Exception as E:
         print(str(E))
         return False
     return True
+def get_clients(websocket,_=None):
+    try:
+        log("get_clients")
+        host_id = str(websocket.id)
+        result = {"type":"clients","message":",".join(HOST_RELATIONAL_DICTIONARY[host_id].keys())}
+        log(result)
+        echo(websocket,dumps(result,ensure_ascii=False))
+    except Exception as E:
+        print(str(E))
+        return False
+    return True
+def info_change(websocket,info=None):
+    try:
+        host_id = str(websocket.id)
+        host_info = HOST_REGISTRATION_DICTIONARY.get(host_id,None)
+        if not host_info:return False
+        HOST_REGISTRATION_DICTIONARY[host_id] = {"websocket":websocket,**info}
+        log(HOST_REGISTRATION_DICTIONARY[host_id])
+
+    except Exception as E:
+        print(str(E))
+        return False
+    return True
+def disconnect(websocket,message):
+    try:
+        del_id = str(websocket.id)
+        if CLIENT_REGISTRATION_DICTIONARY.get(del_id,None):
+            host_id = next(iter(CLIENT_RELATIONAL_DICTIONARY[del_id]))
+            echo(HOST_REGISTRATION_DICTIONARY[host_id].websocket,message)
+            HOST_RELATIONAL_DICTIONARY[host_id].pop(del_id,None)
+        if HOST_REGISTRATION_DICTIONARY.get(del_id,None):
+            for client_id,client_socket in HOST_REGISTRATION_DICTIONARY.copy()[del_id].items():
+                echo(client_socket,message)
+                CLIENT_RELATIONAL_DICTIONARY.pop(client_id)
+        for dict_for_del in DICTIONARIES:
+            dict_for_del.pop(del_id,None)
+    except Exception as E:
+        print("CRASH",str(E),type(E))
+        return False
+    return True
+def echo(websocket,message=None):
+    MESSAGE_QUEUE.put_nowait(websocket.send(message))
+    return True
+def log_upload(websocket,message=None):
+    seek,read = map(int,message.split(",")) if message else 0,-1
+    LOG_FILEDESCRIPTOR.close()
+    with open(LOGFILE,"r",encoding="utf-8") as log_file:
+        log_file.seek(seek)
+        logs = log_file.read(read)
+    LOG_FILEDESCRIPTOR = open(LOGFILE,"a",encoding="utf-8")
+    echo(websocket,logs)
+    return True
+def info_upload(websocket,message=None):
+    res = {
+        "HOST_RELATIONAL":HOST_RELATIONAL_DICTIONARY,
+        "HOST_REGISTRATION":HOST_REGISTRATION_DICTIONARY,
+        "CLIENT_RELATIONAL":CLIENT_RELATIONAL_DICTIONARY,
+        "CLIENT_REGISTRATION":CLIENT_REGISTRATION_DICTIONARY
+        }
+    echo(websocket,dumps(res))
+    return True
+
 def handle_messages(queue:queue):
     while True:
         try:
@@ -77,7 +146,7 @@ def handle_messages(queue:queue):
         except Exception as E:
             print("CRASH",str(E),type(E))
     
-        
+
 async def handle_connection(websocket):
     while True:
         try:
@@ -87,23 +156,18 @@ async def handle_connection(websocket):
                 message = loads(message)
                 if not COMMANDS[message["type"]](websocket,message.get("message",None)):
                     log("fuck off")
-                    await websocket.send(dumps(dict()))
+                    await websocket.send(dumps('{"type":"error","message":"oops somethings gone wrong vwv"}'))
         except websockets.ConnectionClosedError:
             log("disconnect")
         except Exception as E:
             print("CRASH",str(E),type(E))
         finally:
             try:
-                del_id = str(websocket.id)
-                if CLIENT_DICT.get(del_id,None):HOST_REL_DICT[next(iter(CLIENT_REL_DICT[del_id]))].pop(del_id,None) #delete client mention in respective host's rel dict
-                if HOST_DICT.get(del_id,None):
-                    for client_id,server_dict in CLIENT_REL_DICT.copy().items():
-                        if next(iter(server_dict))==del_id:CLIENT_REL_DICT.pop(client_id)
-                for dict_for_del in (HOST_DICT,HOST_REL_DICT,CLIENT_DICT,CLIENT_REL_DICT):
-                    dict_for_del.pop(del_id,None)
+                disconnect(websocket,f"{'type':'disconnect','message':{str(websocket.id)}}")
                 await websocket.close()
             except TypeError:
-                print(del_id,CLIENT_DICT,HOST_REL_DICT,CLIENT_DICT.get(del_id,None))
+                del_id = str(websocket.id)
+                print(del_id,CLIENT_REGISTRATION_DICTIONARY,HOST_RELATIONAL_DICTIONARY,CLIENT_REGISTRATION_DICTIONARY.get(del_id,None))
             except Exception as E:
                 print("CRASH",str(E),type(E))
 
@@ -111,7 +175,15 @@ COMMANDS = {
     "HOST_REG":host_reg,
     "CLI_REG":client_reg,
     "SEND":send,
-    "GET_HOSTS":get_hosts
+    "GET_HOSTS":get_hosts,
+    "GET_CLIENTS":get_clients,
+    "DISCONNECT":disconnect,
+    "ECHO":echo,
+    "INFO_CHANGE":info_change,
+    "GIMME_LOGS":log_upload,
+    "GIMME_INFO":info_upload,
+    #"GLOBAL_BROADCAST":global_broadcast,
+    #"LOCAL_BROADCAST":local_broadcast,
     }
 message_handler = threading.Thread(target=handle_messages,args=(MESSAGE_QUEUE,),daemon=True)
 async def main():
