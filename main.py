@@ -51,7 +51,7 @@ def send(websocket, message=None):
 def get_hosts(websocket,_=None):
     log("get_host")
     if (len(HOST_DICT.keys())==0): return False
-    result = {}
+    result = {"type":"hosts"}
     for key1,val1 in HOST_DICT.items():
         val = {}
         for key2,val2 in val1.items():
