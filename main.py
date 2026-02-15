@@ -65,42 +65,47 @@ def get_hosts(websocket,_=None):
         return False
     return True
 def handle_messages(queue:queue):
-    async def handle():
-        log("message handler started")
-        while True:
-            log("waiting for message")
-            await queue.get()
-            log("sent message")
-    asyncio.run(handle())
+    while True:
+        try:
+            async def handle():
+                log("message handler started")
+                while True:
+                    log("waiting for message")
+                    await queue.get()
+                    log("sent message")
+            asyncio.run(handle())
+        except Exception as E:
+            print("CRASH",str(E),type(E))
     
         
 async def handle_connection(websocket):
-    try:
-        log()
-        async for message in websocket:
-            log(f"{str(websocket.id)} -> {message}")
-            message = loads(message)
-            if not COMMANDS[message["type"]](websocket,message.get("message",None)):
-                log("fuck off")
-                await websocket.send(dumps(dict()))
-    except websockets.ConnectionClosedError:
-        log("disconnect")
-    except Exception as E:
-        print(type(E))
-    finally:
+    while True:
         try:
-            del_id = str(websocket.id)
-            if res:=CLIENT_DICT.get(del_id,None):HOST_REL_DICT[res].pop(del_id,None)
-            if res:=HOST_DICT.get(del_id,None):
-                for client,server in CLIENT_REL_DICT.copy().items():
-                    if server==del_id:CLIENT_REL_DICT.pop(client)
-            for dict_for_del in (HOST_DICT,HOST_REL_DICT,CLIENT_DICT,CLIENT_REL_DICT):
-                dict_for_del.pop(del_id,None)
-            await websocket.close()
-        except TypeError:
-            print(del_id,CLIENT_DICT,HOST_REL_DICT,CLIENT_DICT.get(del_id,None))
+            log()
+            async for message in websocket:
+                log(f"{str(websocket.id)} -> {message}")
+                message = loads(message)
+                if not COMMANDS[message["type"]](websocket,message.get("message",None)):
+                    log("fuck off")
+                    await websocket.send(dumps(dict()))
+        except websockets.ConnectionClosedError:
+            log("disconnect")
         except Exception as E:
-            print(type(E))
+            print("CRASH",str(E),type(E))
+        finally:
+            try:
+                del_id = str(websocket.id)
+                if CLIENT_DICT.get(del_id,None):HOST_REL_DICT[next(iter(CLIENT_REL_DICT[del_id]))].pop(del_id,None) #delete client mention in respective host's rel dict
+                if HOST_DICT.get(del_id,None):
+                    for client_id,server_dict in CLIENT_REL_DICT.copy().items():
+                        if next(iter(server_dict))==del_id:CLIENT_REL_DICT.pop(client_id)
+                for dict_for_del in (HOST_DICT,HOST_REL_DICT,CLIENT_DICT,CLIENT_REL_DICT):
+                    dict_for_del.pop(del_id,None)
+                await websocket.close()
+            except TypeError:
+                print(del_id,CLIENT_DICT,HOST_REL_DICT,CLIENT_DICT.get(del_id,None))
+            except Exception as E:
+                print("CRASH",str(E),type(E))
 
 COMMANDS = {
     "HOST_REG":host_reg,
@@ -110,8 +115,12 @@ COMMANDS = {
     }
 message_handler = threading.Thread(target=handle_messages,args=(MESSAGE_QUEUE,),daemon=True)
 async def main():
-    async with websockets.serve(handle_connection, "0.0.0.0", 8766):
-        await asyncio.Future()
+    while True:
+        try:
+            async with websockets.serve(handle_connection, "0.0.0.0", 8766):
+                await asyncio.Future()
+        except Exception as E:
+            print("CRASH",str(E),type(E))
         
 
 if __name__ == "__main__":
