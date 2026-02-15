@@ -12,11 +12,11 @@ CLIENT_RELATIONAL_DICTIONARY = {}
 CLIENT_REGISTRATION_DICTIONARY = {}
 DICTIONARIES = (HOST_RELATIONAL_DICTIONARY,HOST_REGISTRATION_DICTIONARY,CLIENT_REGISTRATION_DICTIONARY,CLIENT_RELATIONAL_DICTIONARY)
 MESSAGE_QUEUE = queue.Queue()
-LOG_LEVEL = 1
+LOG_LEVEL = 2
 def log(*args,**kwargs):
-    if LOG_LEVEL==1:
+    if LOG_LEVEL!=0:
         with open(LOGFILE,"a",encoding="utf-8") as file:
-            file.write(f"[{time()}] args:({str(args)})\nkwargs:({str(kwargs)})\n\n")
+            file.write(f"[{time()}] args:({str(args)})\nkwargs:({str(kwargs)})\n{'' if LOG_LEVEL<2 else DICTIONARIES}\n\n")
         log(*args,**kwargs)
 def host_reg(websocket,info=None):
     'message -> info in format {key:val,key:val,...}; not necessary; will fail if already registered.'
@@ -83,10 +83,10 @@ def get_clients(websocket,_=None):
         result = {"type":"clients","message":",".join(HOST_RELATIONAL_DICTIONARY[host_id].keys())}
         log(result)
         echo(websocket,dumps(result,ensure_ascii=False))
+        return True
     except Exception as E:
         log(str(E))
         return False
-    return True
 def info_change(websocket,info=None):
     'TODO'
     try:
