@@ -11,7 +11,7 @@ HOST_REGISTRATION_DICTIONARY = {}
 CLIENT_RELATIONAL_DICTIONARY = {}
 CLIENT_REGISTRATION_DICTIONARY = {}
 DICTIONARIES = (HOST_RELATIONAL_DICTIONARY,HOST_REGISTRATION_DICTIONARY,CLIENT_REGISTRATION_DICTIONARY,CLIENT_RELATIONAL_DICTIONARY)
-MESSAGE_QUEUE = queue.Queue()
+#MESSAGE_QUEUE defined in main()
 LOG_LEVEL = 2
 def log(*args,**kwargs):
     try:
@@ -180,7 +180,6 @@ def handle_messages(queue:queue.Queue):
 async def handle_connection(websocket):
     while True:
         try:
-            log()
             async for message in websocket:
                 log(f"{str(websocket.id)} -> {message}")
                 message = loads(message)
@@ -192,7 +191,7 @@ async def handle_connection(websocket):
             log("CRASH",str(E),type(E))
         finally:
             try:
-                disconnect(websocket,"{"+f'"type":"disconnect","message":{str(websocket.id)}'+"}")
+                disconnect(websocket,dumps({"type":"disconnect","message":str(websocket.id)}))
                 await websocket.close()
             except TypeError:
                 del_id = str(websocket.id)
@@ -215,8 +214,11 @@ COMMANDS = {
     #"GLOBAL_BROADCAST":global_broadcast,
     #"LOCAL_BROADCAST":local_broadcast,
     }
-message_handler = threading.Thread(target=handle_messages,args=(MESSAGE_QUEUE,),daemon=True)
+
 async def main():
+    global MESSAGE_QUEUE
+    MESSAGE_QUEUE = queue.Queue()
+    threading.Thread(target=handle_messages,args=(MESSAGE_QUEUE,),daemon=True).start()
     while True:
         try:
             async with websockets.serve(handle_connection, "0.0.0.0", 8766):
@@ -226,5 +228,5 @@ async def main():
         
 
 if __name__ == "__main__":
-    message_handler.start()
+    
     asyncio.run(main())
