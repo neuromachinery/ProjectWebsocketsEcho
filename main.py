@@ -14,10 +14,13 @@ DICTIONARIES = (HOST_RELATIONAL_DICTIONARY,HOST_REGISTRATION_DICTIONARY,CLIENT_R
 MESSAGE_QUEUE = queue.Queue()
 LOG_LEVEL = 2
 def log(*args,**kwargs):
-    if LOG_LEVEL!=0:
-        with open(LOGFILE,"a",encoding="utf-8") as file:
-            file.write(f"[{time()}] args-({str(args)})\nkwargs-({str(kwargs)})\n{'' if LOG_LEVEL<2 else DICTIONARIES}\n\n")
-        print(*args,**kwargs)
+    try:
+        if LOG_LEVEL!=0:
+            with open(LOGFILE,"a",encoding="utf-8") as file:
+                file.write(f"[{time()}] args-({str(args)})\nkwargs-({str(kwargs)})\n{'' if LOG_LEVEL<2 else DICTIONARIES}\n\n")
+            print(*args,**kwargs)
+    except Exception as E:
+        print(str(E))
 def host_reg(websocket,info=None):
     'message -> info in format {key:val,key:val,...}; not necessary; will fail if already registered.'
     log("host_reg")
@@ -171,8 +174,6 @@ async def handle_connection(websocket):
                 if not COMMANDS[message["type"]](websocket,message.get("message",None)):
                     log("fuck off")
                     await websocket.send(dumps('{"type":"error","message":"oops somethings gone wrong vwv"}'))
-        except websockets.ConnectionClosedError:
-            log("disconnect")
         except Exception as E:
             log("CRASH",str(E),type(E))
         finally:
