@@ -109,7 +109,7 @@ def disconnect(websocket,message):
         del_id = str(websocket.id)
         if CLIENT_REGISTRATION_DICTIONARY.get(del_id,None):
             host_id = next(iter(CLIENT_RELATIONAL_DICTIONARY[del_id]))
-            echo(HOST_REGISTRATION_DICTIONARY[host_id].websocket,message)
+            echo(HOST_REGISTRATION_DICTIONARY[host_id]["websocket"],message)
             HOST_RELATIONAL_DICTIONARY[host_id].pop(del_id,None)
         if HOST_REGISTRATION_DICTIONARY.get(del_id,None):
             for client_id,client_socket in HOST_REGISTRATION_DICTIONARY.copy()[del_id].items():
@@ -150,18 +150,22 @@ def man(websocket,_=None):
         result+=f"'{command}'->'{func.__doc__}'\n"
     echo(websocket,result)
     return True
-def handle_messages(queue:queue):
+def handle_messages(queue:queue.Queue):
     while True:
         try:
             async def handle():
                 log("message handler started")
                 while True:
                     log("waiting for message")
-                    await queue.get()
+                    try:
+                        await queue.get()
+                    finally:
+                        queue.task_done()
                     log("sent message")
             asyncio.run(handle())
         except Exception as E:
             log("CRASH",str(E),type(E))
+        
     
 
 async def handle_connection(websocket):
