@@ -14,13 +14,11 @@ DICTIONARIES = (HOST_RELATIONAL_DICTIONARY,HOST_REGISTRATION_DICTIONARY,CLIENT_R
 #MESSAGE_QUEUE defined in main()
 LOG_LEVEL = 2
 def log(*args,**kwargs):
-    try:
-        if LOG_LEVEL!=0:
-            with open(LOGFILE,"a",encoding="utf-8") as file:
-                file.write(f"[{time()}] args-({str(args)})\nkwargs-({str(kwargs)})\n{'' if LOG_LEVEL<2 else DICTIONARIES}\n\n")
-            print(*args,**kwargs)
-    except Exception as E:
-        print(str(E))
+    if LOG_LEVEL!=0:
+        with open(LOGFILE,"a",encoding="utf-8") as file:
+            file.write(f"[{time()}] args-({str(args)})\nkwargs-({str(kwargs)})\n{'' if LOG_LEVEL<2 else DICTIONARIES}\n\n")
+        print(*args,**kwargs)
+
 def host_reg(websocket,info=None):
     'message -> info in format {key:val,key:val,...}; not necessary; will fail if already registered.'
     log("host_reg")
@@ -63,69 +61,52 @@ def send(websocket, message=None):
     return False
 def get_hosts(websocket,_=None):
     'TODO'
-    try:
-        log("get_host")
-        result = {"type":"hosts","message":dict()}
-        for key1,val1 in HOST_REGISTRATION_DICTIONARY.items():
-            val = {}
-            for key2,val2 in val1.items():
-                if key2=="websocket": continue
-                val[key2] = val2
-            result["message"] = {key1:val}
-        log(result)
-        echo(websocket,dumps(result,ensure_ascii=False))
-    except Exception as E:
-        log(str(E))
-        return False
+    log("get_host")
+    result = {"type":"hosts","message":dict()}
+    for key1,val1 in HOST_REGISTRATION_DICTIONARY.items():
+        val = {}
+        for key2,val2 in val1.items():
+            if key2=="websocket": continue
+            val[key2] = val2
+        result["message"].update({key1:val})
+    log(result)
+    print("########################################")
+    print(result)
+    print("########################################")
+    echo(websocket,dumps(result,ensure_ascii=False))
     return True
 def get_clients(websocket,_=None):
     'TODO'
-    try:
-        log("get_clients")
-        host_id = str(websocket.id)
-        result = {"type":"clients","message":",".join(HOST_RELATIONAL_DICTIONARY[host_id].keys())}
-        log(result)
-        echo(websocket,dumps(result,ensure_ascii=False))
-        return True
-    except Exception as E:
-        log(str(E))
-        return False
+    log("get_clients")
+    host_id = str(websocket.id)
+    result = {"type":"clients","message":",".join(HOST_RELATIONAL_DICTIONARY[host_id].keys())}
+    log(result)
+    echo(websocket,dumps(result,ensure_ascii=False))
+    return True
+
 def info_change(websocket,info=None):
     'TODO'
-    try:
-        host_id = str(websocket.id)
-        host_info = HOST_REGISTRATION_DICTIONARY.get(host_id,None)
-        if not host_info:return False
-        HOST_REGISTRATION_DICTIONARY[host_id] = {"websocket":websocket,**info}
-        log(HOST_REGISTRATION_DICTIONARY[host_id])
-
-    except Exception as E:
-        log(str(E))
-        return False
+    host_id = str(websocket.id)
+    host_info = HOST_REGISTRATION_DICTIONARY.get(host_id,None)
+    if not host_info:return False
+    HOST_REGISTRATION_DICTIONARY[host_id] = {"websocket":websocket,**info}
+    log(HOST_REGISTRATION_DICTIONARY[host_id])
     return True
 def disconnect(websocket,message):
     'TODO'
-    try:
-        del_id = str(websocket.id)
-        if CLIENT_REGISTRATION_DICTIONARY.get(del_id,None):
-            host_id = next(iter(CLIENT_RELATIONAL_DICTIONARY[del_id]))
-            print("########################################")
-            print(HOST_REGISTRATION_DICTIONARY)
-            print(HOST_REGISTRATION_DICTIONARY[host_id])
-            print(HOST_REGISTRATION_DICTIONARY[host_id]["websocket"])
-            print("########################################")
-            host_websocket = HOST_REGISTRATION_DICTIONARY[host_id]["websocket"]
-            echo(host_websocket,message)
-            HOST_RELATIONAL_DICTIONARY[host_id].pop(del_id,None)
-        if HOST_REGISTRATION_DICTIONARY.get(del_id,None):
-            for client_id,client_socket in HOST_REGISTRATION_DICTIONARY.copy()[del_id].items():
-                echo(client_socket,message)
-                CLIENT_RELATIONAL_DICTIONARY.pop(client_id)
-        for dict_for_del in DICTIONARIES:
-            dict_for_del.pop(del_id,None)
-    except Exception as E:
-        log("CRASH",str(E),type(E))
-        return False
+    del_id = str(websocket.id)
+    if CLIENT_REGISTRATION_DICTIONARY.get(del_id,None):
+        host_id = next(iter(CLIENT_RELATIONAL_DICTIONARY[del_id]))
+        
+        host_websocket = HOST_REGISTRATION_DICTIONARY[host_id]["websocket"]
+        echo(host_websocket,message)
+        HOST_RELATIONAL_DICTIONARY[host_id].pop(del_id,None)
+    if HOST_REGISTRATION_DICTIONARY.get(del_id,None):
+        for client_id,client_socket in HOST_REGISTRATION_DICTIONARY.copy()[del_id].items():
+            echo(client_socket,message)
+            CLIENT_RELATIONAL_DICTIONARY.pop(client_id,None)
+    for dict_for_del in DICTIONARIES:
+        dict_for_del.pop(del_id,None)
     return True
 def echo(websocket,message=None):
     'TODO'
@@ -158,22 +139,20 @@ def man(websocket,_=None):
     return True
 def handle_messages(queue:queue.Queue):
     while True:
-        try:
-            async def handle():
-                log("message handler started")
-                while True:
-                    log("waiting for message")
-                    try:
-                        await queue.get()
-                    except websockets.exceptions.ConnectionClosedError:pass
-                    except websockets.exceptions.ConnectionClosedOK:pass
-                    except websockets.exceptions.ConnectionClosed:pass
-                    finally:
-                        queue.task_done()
-                    log("sent message")
-            asyncio.run(handle())
-        except Exception as E:
-            log("CRASH",str(E),type(E))
+        async def handle():
+            log("message handler started")
+            while True:
+                log("waiting for message")
+                try:
+                    await queue.get()
+                except websockets.exceptions.ConnectionClosedError:pass
+                except websockets.exceptions.ConnectionClosedOK:pass
+                except websockets.exceptions.ConnectionClosed:pass
+                finally:
+                    queue.task_done()
+                log("sent message")
+        asyncio.run(handle())
+        
         
     
 
@@ -187,8 +166,6 @@ async def handle_connection(websocket):
                     log("fuck off")
                     await websocket.send(dumps('{"type":"error","message":"oops somethings gone wrong vwv"}'))
         except websockets.exceptions.ConnectionClosedError:pass
-        except Exception as E:
-            log("CRASH",str(E),type(E))
         finally:
             try:
                 disconnect(websocket,dumps({"type":"disconnect","message":str(websocket.id)}))
@@ -196,8 +173,8 @@ async def handle_connection(websocket):
             except TypeError:
                 del_id = str(websocket.id)
                 log(del_id,CLIENT_REGISTRATION_DICTIONARY,HOST_RELATIONAL_DICTIONARY,CLIENT_REGISTRATION_DICTIONARY.get(del_id,None))
-            except Exception as E:
-                log("CRASH",str(E),type(E))
+            
+
 
 COMMANDS = {
     "HOST_REG":host_reg,
@@ -220,11 +197,9 @@ async def main():
     MESSAGE_QUEUE = queue.Queue()
     threading.Thread(target=handle_messages,args=(MESSAGE_QUEUE,),daemon=True).start()
     while True:
-        try:
-            async with websockets.serve(handle_connection, "0.0.0.0", 8766):
-                await asyncio.Future()
-        except Exception as E:
-            log("CRASH",str(E),type(E))
+        async with websockets.serve(handle_connection, "0.0.0.0", 8766):
+            await asyncio.Future()
+        
         
 
 if __name__ == "__main__":
