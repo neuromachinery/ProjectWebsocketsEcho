@@ -40,7 +40,7 @@ def client_reg(websocket, host_id=None):
     log(f"host id:{host_id},\nhost_rel:{HOST_RELATIONAL_DICTIONARY},\nhost_dict:{HOST_REGISTRATION_DICTIONARY},\nres:{res}")
     if res!=None:
         client_id = str(websocket.id)
-        if CLIENT_RELATIONAL_DICTIONARY.get(client_id,None) == None:return False
+        if CLIENT_RELATIONAL_DICTIONARY.get(client_id,None) != None:return False
         HOST_RELATIONAL_DICTIONARY[host_id][client_id] = websocket
         CLIENT_RELATIONAL_DICTIONARY[client_id] = {host_id:HOST_REGISTRATION_DICTIONARY[host_id]["websocket"]}
         CLIENT_REGISTRATION_DICTIONARY[client_id] = {"websocket":websocket,}
@@ -178,7 +178,7 @@ async def handle_connection(websocket):
             log("CRASH",str(E),type(E))
         finally:
             try:
-                disconnect(websocket,f"{'type':'disconnect','message':{str(websocket.id)}}")
+                disconnect(websocket,"{"+f'"type":"disconnect","message":{str(websocket.id)}'+"}")
                 await websocket.close()
             except TypeError:
                 del_id = str(websocket.id)
