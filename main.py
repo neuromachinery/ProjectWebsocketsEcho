@@ -109,7 +109,13 @@ def disconnect(websocket,message):
         del_id = str(websocket.id)
         if CLIENT_REGISTRATION_DICTIONARY.get(del_id,None):
             host_id = next(iter(CLIENT_RELATIONAL_DICTIONARY[del_id]))
-            echo(HOST_REGISTRATION_DICTIONARY[host_id]["websocket"],message)
+            print("########################################")
+            print(HOST_REGISTRATION_DICTIONARY)
+            print(HOST_REGISTRATION_DICTIONARY[host_id])
+            print(HOST_REGISTRATION_DICTIONARY[host_id]["websocket"])
+            print("########################################")
+            host_websocket = HOST_REGISTRATION_DICTIONARY[host_id]["websocket"]
+            echo(host_websocket,message)
             HOST_RELATIONAL_DICTIONARY[host_id].pop(del_id,None)
         if HOST_REGISTRATION_DICTIONARY.get(del_id,None):
             for client_id,client_socket in HOST_REGISTRATION_DICTIONARY.copy()[del_id].items():
@@ -178,6 +184,7 @@ async def handle_connection(websocket):
                 if not COMMANDS[message["type"]](websocket,message.get("message",None)):
                     log("fuck off")
                     await websocket.send(dumps('{"type":"error","message":"oops somethings gone wrong vwv"}'))
+        except websockets.exceptions.ConnectionClosedError:pass
         except Exception as E:
             log("CRASH",str(E),type(E))
         finally:
