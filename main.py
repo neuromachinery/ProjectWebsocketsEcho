@@ -11,7 +11,6 @@ HOST_REGISTRATION_DICTIONARY = {}
 CLIENT_RELATIONAL_DICTIONARY = {}
 CLIENT_REGISTRATION_DICTIONARY = {}
 DICTIONARIES = (HOST_RELATIONAL_DICTIONARY,HOST_REGISTRATION_DICTIONARY,CLIENT_REGISTRATION_DICTIONARY,CLIENT_RELATIONAL_DICTIONARY)
-#MESSAGE_QUEUE defined in main()
 LOG_LEVEL = 2
 def log(*args,**kwargs):
     if LOG_LEVEL!=0:
@@ -28,9 +27,9 @@ def host_reg(websocket,info=None):
         HOST_REGISTRATION_DICTIONARY[host_id] = {"websocket":websocket,**info}
         HOST_RELATIONAL_DICTIONARY[host_id]=dict()
         log(HOST_REGISTRATION_DICTIONARY[host_id])
-        return True
+        return 0
 
-    return False
+    return 1
 def client_reg(websocket, host_id=None):
     'TODO'
     log("client_reg")
@@ -42,9 +41,9 @@ def client_reg(websocket, host_id=None):
         HOST_RELATIONAL_DICTIONARY[host_id][client_id] = websocket
         CLIENT_RELATIONAL_DICTIONARY[client_id] = {host_id:HOST_REGISTRATION_DICTIONARY[host_id]["websocket"]}
         CLIENT_REGISTRATION_DICTIONARY[client_id] = {"websocket":websocket,}
-        return True
+        return 0
 
-    return False
+    return 1
 def send(websocket, message=None):
     'TODO'
     log("send")
@@ -56,9 +55,9 @@ def send(websocket, message=None):
             log(f"sending to {sub_id}")
             echo(sub_ws,dumps({"type":"message","message":message},ensure_ascii=False))
         log("yey")
-        return True
+        return 0
 
-    return False
+    return 2
 def get_hosts(websocket,_=None):
     'TODO'
     log("get_host")
@@ -70,11 +69,8 @@ def get_hosts(websocket,_=None):
             val[key2] = val2
         result["message"].update({key1:val})
     log(result)
-    print("########################################")
-    print(result)
-    print("########################################")
     echo(websocket,dumps(result,ensure_ascii=False))
-    return True
+    return 0
 def get_clients(websocket,_=None):
     'TODO'
     log("get_clients")
@@ -82,16 +78,16 @@ def get_clients(websocket,_=None):
     result = {"type":"clients","message":",".join(HOST_RELATIONAL_DICTIONARY[host_id].keys())}
     log(result)
     echo(websocket,dumps(result,ensure_ascii=False))
-    return True
+    return 0
 
 def info_change(websocket,info=None):
     'TODO'
     host_id = str(websocket.id)
     host_info = HOST_REGISTRATION_DICTIONARY.get(host_id,None)
-    if not host_info:return False
+    if not host_info:return 3
     HOST_REGISTRATION_DICTIONARY[host_id] = {"websocket":websocket,**info}
     log(HOST_REGISTRATION_DICTIONARY[host_id])
-    return True
+    return 0
 def disconnect(websocket,message):
     'TODO'
     del_id = str(websocket.id)
@@ -107,11 +103,11 @@ def disconnect(websocket,message):
             CLIENT_RELATIONAL_DICTIONARY.pop(client_id,None)
     for dict_for_del in DICTIONARIES:
         dict_for_del.pop(del_id,None)
-    return True
+    return 0
 def echo(websocket,message=None):
     'TODO'
     MESSAGE_QUEUE.put_nowait(websocket.send(message))
-    return True
+    return 0
 def log_upload(websocket,message=None):
     'TODO'
     seek,read = map(int,message.split(",")) if message else 0,-1
@@ -119,7 +115,7 @@ def log_upload(websocket,message=None):
         log_file.seek(seek)
         logs = log_file.read(read)
     echo(websocket,logs)
-    return True
+    return 0
 def info_upload(websocket,_=None):
     'TODO'
     res = {
@@ -129,14 +125,14 @@ def info_upload(websocket,_=None):
         "CLIENT_REGISTRATION":CLIENT_REGISTRATION_DICTIONARY
         }
     echo(websocket,dumps(res))
-    return True
+    return 0
 def man(websocket,_=None):
     'TODO'
     result = ""
     for command,func in COMMANDS.items():
         result+=f"'{command}'->'{func.__doc__}'\n"
     echo(websocket,result)
-    return True
+    return 0
 def handle_messages(queue:queue.Queue):
     while True:
         async def handle():
@@ -153,26 +149,45 @@ def handle_messages(queue:queue.Queue):
                 log("sent message")
         asyncio.run(handle())
         
-        
-    
 
 async def handle_connection(websocket):
+    global MESSAGE_QUEUE
+    MESSAGE_QUEUE = queue.Queue()
     while True:
-        try:
-            async for message in websocket:
-                log(f"{str(websocket.id)} -> {message}")
-                message = loads(message)
-                if not COMMANDS[message["type"]](websocket,message.get("message",None)):
-                    log("fuck off")
-                    await websocket.send(dumps('{"type":"error","message":"oops somethings gone wrong vwv"}'))
-        except websockets.exceptions.ConnectionClosedError:pass
-        finally:
+        # Create futures for continuous sources
+        ws_future = asyncio.Future()  # Will be recreated
+        queue_future = MESSAGE_QUEUE.get()    # Awaitable from queue
+        
+        async def ws_receiver():
             try:
+                async for message in websocket:
+                    yield message
+            except:
                 disconnect(websocket,dumps({"type":"disconnect","message":str(websocket.id)}))
-                await websocket.close()
-            except TypeError:
-                del_id = str(websocket.id)
-                log(del_id,CLIENT_REGISTRATION_DICTIONARY,HOST_RELATIONAL_DICTIONARY,CLIENT_REGISTRATION_DICTIONARY.get(del_id,None))
+        
+        async for source in ws_receiver():
+            # Race WS receive vs queue.get()
+            done, pending = await asyncio.wait(
+                [ws_future, queue_future], 
+                return_when=asyncio.FIRST_COMPLETED
+            )
+            
+            for task in done:
+                if task is ws_future:
+                    # Process WS message
+                    message = source  # From generator
+                    log(f"{str(websocket.id)} -> {message}")
+                    message = loads(message)
+                    if res:=COMMANDS[message["type"]](websocket,message.get("message",None))!=0:
+                        log("fuck off")
+                        await websocket.send(dumps({"type":"error","message":ERROR_CODES[res] if res in ERROR_CODES else "whar?"}))
+                    ws_future = asyncio.Future()  # Reset for next
+                    queue_future = MESSAGE_QUEUE.get()    # Continue racing
+                else:
+                    # Process queue message
+                    task.result()
+                    MESSAGE_QUEUE.task_done()
+                    queue_future = MESSAGE_QUEUE.get()  # Get next
             
 
 
@@ -191,11 +206,13 @@ COMMANDS = {
     #"GLOBAL_BROADCAST":global_broadcast,
     #"LOCAL_BROADCAST":local_broadcast,
     }
-
+ERROR_CODES = {
+    0:"okay :3",
+    1:"you already did that",
+    2:"there's no one there",
+    3:"who are you again?",
+}
 async def main():
-    global MESSAGE_QUEUE
-    MESSAGE_QUEUE = queue.Queue()
-    threading.Thread(target=handle_messages,args=(MESSAGE_QUEUE,),daemon=True).start()
     while True:
         async with websockets.serve(handle_connection, "0.0.0.0", 8766):
             await asyncio.Future()
@@ -203,5 +220,4 @@ async def main():
         
 
 if __name__ == "__main__":
-    
     asyncio.run(main())
