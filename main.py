@@ -165,6 +165,9 @@ def handle_messages(queue:queue.Queue):
                     log("waiting for message")
                     try:
                         await queue.get()
+                    except websockets.exceptions.ConnectionClosedError:pass
+                    except websockets.exceptions.ConnectionClosedOK:pass
+                    except websockets.exceptions.ConnectionClosed:pass
                     finally:
                         queue.task_done()
                     log("sent message")
