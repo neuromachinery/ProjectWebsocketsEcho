@@ -31,21 +31,21 @@ def host_reg(websocket,info=None):
 
     return 1
 def client_reg(websocket, host_id=None):
-    'TODO'
+    'message -> host id string in format "25895680134601346"; absolutely necessary; will fail if already registered'
     log("client_reg")
     res = HOST_RELATIONAL_DICTIONARY.get(host_id,None)
     log(f"host id:{host_id},\nhost_rel:{HOST_RELATIONAL_DICTIONARY},\nhost_dict:{HOST_REGISTRATION_DICTIONARY},\nres:{res}")
     if res!=None:
         client_id = str(websocket.id)
-        if CLIENT_RELATIONAL_DICTIONARY.get(client_id,None) != None:return False
+        if CLIENT_RELATIONAL_DICTIONARY.get(client_id,None) != None:return 1
         HOST_RELATIONAL_DICTIONARY[host_id][client_id] = websocket
         CLIENT_RELATIONAL_DICTIONARY[client_id] = {host_id:HOST_REGISTRATION_DICTIONARY[host_id]["websocket"]}
         CLIENT_REGISTRATION_DICTIONARY[client_id] = {"websocket":websocket,}
         return 0
 
-    return 1
+    return 2
 def send(websocket, message=None):
-    'TODO'
+    'message -> uhh, the message? in format fuck-all, to send to clients if you\'re host and vice reversa; strictly speaking not required but like why would you do that; will fail if you\'re crazy'
     log("send")
     user_id = str(websocket.id)
     res = next(item for item in (HOST_RELATIONAL_DICTIONARY.get(user_id,None),CLIENT_RELATIONAL_DICTIONARY.get(user_id,None),False) if item is not None)
@@ -59,7 +59,7 @@ def send(websocket, message=None):
 
     return 2
 def get_hosts(websocket,_=None):
-    'TODO'
+    'message (of any size) -> "tl;dr. here\'s available hosts. whateverr"'
     log("get_host")
     result = {"type":"hosts","message":dict()}
     for key1,val1 in HOST_REGISTRATION_DICTIONARY.items():
@@ -72,7 +72,7 @@ def get_hosts(websocket,_=None):
     echo(websocket,dumps(result,ensure_ascii=False))
     return 0
 def get_clients(websocket,_=None):
-    'TODO'
+    'message (of any size) -> "tl;dr. here\'s available clients. whateverr"'
     log("get_clients")
     host_id = str(websocket.id)
     result = {"type":"clients","message":",".join(HOST_RELATIONAL_DICTIONARY[host_id].keys())}
@@ -81,7 +81,7 @@ def get_clients(websocket,_=None):
     return 0
 
 def info_change(websocket,info=None):
-    'TODO'
+    'message -> info json dictionary for yo info in format {"key":"val","key":"val",...};required;will fail if- who tf are you?'
     host_id = str(websocket.id)
     host_info = HOST_REGISTRATION_DICTIONARY.get(host_id,None)
     if not host_info:return 3
@@ -89,7 +89,7 @@ def info_change(websocket,info=None):
     log(HOST_REGISTRATION_DICTIONARY[host_id])
     return 0
 def disconnect(websocket,message):
-    'TODO'
+    'message -> message to broadcast to everyone who knows you;not required;will not fail no matter what'
     del_id = str(websocket.id)
     if CLIENT_REGISTRATION_DICTIONARY.get(del_id,None):
         host_id = next(iter(CLIENT_RELATIONAL_DICTIONARY[del_id]))
@@ -105,11 +105,11 @@ def disconnect(websocket,message):
         dict_for_del.pop(del_id,None)
     return 0
 def echo(websocket,message=None):
-    'TODO'
+    'message -> <- message '
     MESSAGE_QUEUE.put_nowait(websocket.send(message))
     return 0
 def log_upload(websocket,message=None):
-    'TODO'
+    'lemme see those logs'
     seek,read = map(int,message.split(",")) if message else 0,-1
     with open(LOGFILE,"r",encoding="utf-8") as log_file:
         log_file.seek(seek)
@@ -117,7 +117,7 @@ def log_upload(websocket,message=None):
     echo(websocket,logs)
     return 0
 def info_upload(websocket,_=None):
-    'TODO'
+    'lemme see thiss data'
     res = {
         "HOST_RELATIONAL":HOST_RELATIONAL_DICTIONARY,
         "HOST_REGISTRATION":HOST_REGISTRATION_DICTIONARY,
@@ -127,7 +127,7 @@ def info_upload(websocket,_=None):
     echo(websocket,dumps(res))
     return 0
 def man(websocket,_=None):
-    'TODO'
+    'The Manual. You\'re reading one.'
     result = ""
     for command,func in COMMANDS.items():
         result+=f"'{command}'->'{func.__doc__}'\n"
