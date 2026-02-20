@@ -199,6 +199,7 @@ async def cleanup_dead_connections():
         global connected_websockets
         dead = [ws for ws in connected_websockets if ws.state in (State.CLOSED,State.CLOSING)]
         for ws in dead:
+            print(f"###### {ws} [{type(ws)}] ({dead}) <{connected_websockets}>")
             await disconnect(ws,dumps({"type":"disconnect","message":str(ws.id)}))
             connected_websockets.discard(ws)        
         
