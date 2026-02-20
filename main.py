@@ -107,7 +107,7 @@ async def disconnect(websocket,message):
     return 0
 async def echo(websocket:ServerConnection, message=None):
     'message -> <- message '
-
+    print(f"###{websocket} [{type(websocket)}]")
     if websocket.state != State.OPEN:
         return  # Skip dead connections
     if type(message)==dict:
