@@ -23,7 +23,6 @@ async def host_reg(websocket,info=None):
     'message -> info in format {key:val,key:val,...}; not necessary; will fail if already registered.'
     log("host_reg")
     a = {"websocket":websocket,**info}
-    print(f"######### {a}")
     host_id = str(websocket.id)
     res = HOST_RELATIONAL_DICTIONARY.get(host_id,None)
     if not res:
@@ -47,6 +46,16 @@ async def client_reg(websocket, host_id=None):
         return 0
 
     return 2
+async def direct(websocket, message=None):
+    'message -> {"recipients":("152656136","563461346"),"message":"the message itself"}; sends message to selected recipients. Will not send to clients not subscribed to you; crashes if no message'
+    log("direct")
+    host_id = str(websocket.id)
+    if not host_id in HOST_REGISTRATION_DICTIONARY or host_id in CLIENT_REGISTRATION_DICTIONARY:return 4
+    for client_id, client_websocket in HOST_RELATIONAL_DICTIONARY[host_id]:
+        if client_id in message["recipients"]:
+            await echo(client_websocket,message["message"])
+
+
 async def send(websocket, message=None):
     'message -> uhh, the message? in format fuck-all, to send to clients if you\'re host and vice reversa; strictly speaking not required but like why would you do that; will fail if you\'re crazy'
     log("send")
@@ -98,12 +107,10 @@ async def disconnect(websocket,message):
     if CLIENT_REGISTRATION_DICTIONARY.get(del_id,None):
         host_id = next(iter(CLIENT_RELATIONAL_DICTIONARY[del_id]))
         host_websocket = HOST_REGISTRATION_DICTIONARY[host_id]["websocket"]
-        print(f"###{host_websocket} ({websocket}) [{HOST_REGISTRATION_DICTIONARY[host_id]}]")
         await echo(host_websocket,message)
         HOST_RELATIONAL_DICTIONARY[host_id].pop(del_id,None)
     elif HOST_REGISTRATION_DICTIONARY.get(del_id,None):
         for client_id,client_socket in HOST_RELATIONAL_DICTIONARY.copy()[del_id].items():
-            print(f"###{client_socket} ({websocket}) [{client_id}] <{HOST_RELATIONAL_DICTIONARY[del_id]}>")
             await echo(client_socket,message)
             CLIENT_RELATIONAL_DICTIONARY.pop(client_id,None)
     for dict_for_del in DICTIONARIES:
@@ -169,6 +176,7 @@ COMMANDS = {
     "HOST_REG":host_reg,
     "CLI_REG":client_reg,
     "SEND":send,
+    "DIRECT":direct,
     "GET_HOSTS":get_hosts,
     "GET_CLIENTS":get_clients,
     "DISCONNECT":disconnect,
@@ -203,7 +211,6 @@ async def cleanup_dead_connections():
         global connected_websockets
         dead = [ws for ws in connected_websockets if ws.state in (State.CLOSED,State.CLOSING)]
         for ws in dead:
-            print(f"###### {ws} [{type(ws)}] ({dead}) <{connected_websockets}>")
             await disconnect(ws,dumps({"type":"disconnect","message":str(ws.id)}))
             connected_websockets.discard(ws)        
         
