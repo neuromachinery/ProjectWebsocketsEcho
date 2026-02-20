@@ -102,8 +102,8 @@ async def disconnect(websocket,message):
         await echo(host_websocket,message)
         HOST_RELATIONAL_DICTIONARY[host_id].pop(del_id,None)
     elif HOST_REGISTRATION_DICTIONARY.get(del_id,None):
-        for client_id,client_socket in HOST_REGISTRATION_DICTIONARY.copy()[del_id].items():
-            print(f"###{client_socket} ({websocket}) [{client_id}] <{HOST_REGISTRATION_DICTIONARY[del_id]}>")
+        for client_id,client_socket in HOST_RELATIONAL_DICTIONARY.copy()[del_id].items():
+            print(f"###{client_socket} ({websocket}) [{client_id}] <{HOST_RELATIONAL_DICTIONARY[del_id]}>")
             await echo(client_socket,message)
             CLIENT_RELATIONAL_DICTIONARY.pop(client_id,None)
     for dict_for_del in DICTIONARIES:
