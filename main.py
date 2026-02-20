@@ -47,7 +47,7 @@ async def client_reg(websocket, host_id=None):
 
     return 2
 async def direct(websocket, message=None):
-    'message -> {"recipients":("152656136","563461346"),"message":"the message itself"}; sends message to selected recipients. Will not send to clients not subscribed to you; crashes if no message'
+    'message -> {"recipients":["152656136","563461346"],"message":"the message itself"}; sends message to selected recipients. Will not send to clients not subscribed to you; crashes if no message'
     log("direct")
     host_id = str(websocket.id)
     if not host_id in HOST_REGISTRATION_DICTIONARY or host_id in CLIENT_REGISTRATION_DICTIONARY:return 4
