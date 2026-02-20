@@ -98,10 +98,12 @@ async def disconnect(websocket,message):
     if CLIENT_REGISTRATION_DICTIONARY.get(del_id,None):
         host_id = next(iter(CLIENT_RELATIONAL_DICTIONARY[del_id]))
         host_websocket = HOST_REGISTRATION_DICTIONARY[host_id]["websocket"]
+        print(f"###{host_websocket} ({websocket}) [{HOST_REGISTRATION_DICTIONARY[host_id]}]")
         await echo(host_websocket,message)
         HOST_RELATIONAL_DICTIONARY[host_id].pop(del_id,None)
-    if HOST_REGISTRATION_DICTIONARY.get(del_id,None):
+    elif HOST_REGISTRATION_DICTIONARY.get(del_id,None):
         for client_id,client_socket in HOST_REGISTRATION_DICTIONARY.copy()[del_id].items():
+            print(f"###{client_socket} ({websocket}) [{client_id}] <{HOST_REGISTRATION_DICTIONARY[del_id]}>")
             await echo(client_socket,message)
             CLIENT_RELATIONAL_DICTIONARY.pop(client_id,None)
     for dict_for_del in DICTIONARIES:
@@ -109,7 +111,7 @@ async def disconnect(websocket,message):
     return 0
 async def echo(websocket:ServerConnection, message=None):
     'message -> <- message '
-    print(f"###{websocket} [{type(websocket)}] ({message}) <{type(message)}>")
+    #print(f"###{websocket} [{type(websocket)}] ({message}) <{type(message)}>")
     if websocket.state != State.OPEN:
         return  # Skip dead connections
     if type(message)==dict:
