@@ -204,4 +204,5 @@ async def cleanup_dead_connections():
         
 
 if __name__ == "__main__":
+    print("started")
     asyncio.run(main())
