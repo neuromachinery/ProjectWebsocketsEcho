@@ -189,7 +189,7 @@ async def main():
     MESSAGE_QUEUE = asyncio.Queue()
     asyncio.create_task(cleanup_dead_connections())
     while True:
-        async with serve(handler=handle_connection, host="0.0.0.0", port=8766):
+        async with serve(handler=handle_connection, host="0.0.0.0", port=9000):
             await asyncio.Future()
 
 
