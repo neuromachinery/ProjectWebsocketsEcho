@@ -22,6 +22,7 @@ def log(*args,**kwargs):
 async def host_reg(websocket,info=None):
     'message -> info in format {key:val,key:val,...}; not necessary; will fail if already registered.'
     log("host_reg")
+    print(f"######### {websocket} [{type(websocket)}] ({info}) <{type(info)}>")
     host_id = str(websocket.id)
     res = HOST_RELATIONAL_DICTIONARY.get(host_id,None)
     if not res:
