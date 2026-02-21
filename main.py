@@ -135,7 +135,7 @@ async def echo(websocket:ServerConnection, message=None):
     return 0
 async def whoami(websocket,_=None):
     'message -> idc; returns YOUR id'
-    await echo(websocket,str(websocket.id))
+    await echo(websocket,dumps({"type":"id","message":str(websocket.id)}))
     return 0
 async def log_upload(websocket,message=None):
     'lemme see those logs'
