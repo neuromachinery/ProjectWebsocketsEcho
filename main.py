@@ -133,6 +133,10 @@ async def echo(websocket:ServerConnection, message=None):
     log(f"({str(websocket.id)}) <- [{message}]")
 
     return 0
+async def whoami(websocket,_=None):
+    'message -> idc; returns YOUR id'
+    await echo(websocket,str(websocket.id))
+    return 0
 async def log_upload(websocket,message=None):
     'lemme see those logs'
     seek,read = map(int,message.split(",")) if message else 0,-1
@@ -170,10 +174,9 @@ async def handle_connection(websocket:ServerConnection):
             message = loads(message)
             res = await COMMANDS[message["type"]](websocket, message.get("message", None))
             if res != 0:
-                await websocket.send(dumps({
-                    "type": "error", 
-                    "message": ERROR_CODES.get(res, "whar?")
-                }))
+                await echo(websocket,dumps({"type": "error", "message": ERROR_CODES.get(res, "whar?")}))
+            else:
+                await echo(websocket,dumps({"type": "success", "message": ERROR_CODES[0]}))
     except Exception as e:
         log(f"WS processor ended for {websocket.id}: {e}")
 
@@ -191,6 +194,7 @@ COMMANDS = {
     "INFO_CHANGE":info_change,
     "GIMME_LOGS":log_upload,
     "GIMME_INFO":info_upload,
+    "WHOAMI":whoami,
     "MAN":man,
     
     #"GLOBAL_BROADCAST":global_broadcast,
