@@ -90,11 +90,11 @@ async def get_hosts(websocket,_=None):
     await echo(websocket,dumps(result,ensure_ascii=False))
     return 0
 async def get_clients(websocket,_=None):
-    'message (of any size) -> "tl;dr. here\'s available clients. whateverr"; format {"type":"clients","message":"15135252,65426756136,..."; will fail if you aren\'t a host'
+    'message (of any size) -> "tl;dr. here\'s available clients. whateverr"; format {"type":"clients","message":"15135252,65426756136,..."}; will fail if you aren\'t a host'
     log("get_clients")
     host_id = str(websocket.id)
     if host_id not in HOST_REGISTRATION_DICTIONARY:return 4
-    result = {"type":"clients","message":",".join(HOST_RELATIONAL_DICTIONARY[host_id].keys())}
+    result = {"type":"clients","message":list(HOST_RELATIONAL_DICTIONARY[host_id].keys())}
     log(result)
     await echo(websocket,dumps(result,ensure_ascii=False))
     return 0
