@@ -125,6 +125,7 @@ async def disconnect(websocket,message):
 async def echo(websocket:ServerConnection, message=None):
     'message -> <- message '
     #print(f"###{websocket} [{type(websocket)}] ({message}) <{type(message)}>")
+    if message == None:return 0
     if websocket.state != State.OPEN:
         return  # Skip dead connections
     if type(message)==dict:
@@ -217,7 +218,7 @@ async def main():
     MESSAGE_QUEUE = asyncio.Queue()
     asyncio.create_task(cleanup_dead_connections())
     while True:
-        async with serve(handler=handle_connection, host="0.0.0.0", port=9000):
+        async with serve(handler=handle_connection, host="0.0.0.0", port=10000):
             await asyncio.Future()
 
 
