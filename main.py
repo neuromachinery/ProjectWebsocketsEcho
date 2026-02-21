@@ -54,7 +54,13 @@ async def direct(websocket, message=None):
     for client_id, client_websocket in HOST_RELATIONAL_DICTIONARY[host_id]:
         if client_id in message["recipients"]:
             await echo(client_websocket,message["message"])
-
+async def kick(websocket,client_id=None):
+    'message -> 53415345616; tries to delete specified client from your relational dictionary; will fail if not host or no client specified or message isn\'t a string'
+    if not client_id or type(client_id)==dict: return 6
+    host_id = str(websocket.id)
+    if not host_id in HOST_REGISTRATION_DICTIONARY: return 4
+    HOST_RELATIONAL_DICTIONARY[host_id].pop(client_id,None)
+    return 0
 
 async def send(websocket, message=None):
     'message -> uhh, the message? in format fuck-all, to send to clients if you\'re host and vice reversa; strictly speaking not required but like why would you do that; will fail if you\'re crazy'
@@ -177,6 +183,7 @@ COMMANDS = {
     "CLI_REG":client_reg,
     "SEND":send,
     "DIRECT":direct,
+    "KICK":kick,
     "GET_HOSTS":get_hosts,
     "GET_CLIENTS":get_clients,
     "DISCONNECT":disconnect,
@@ -185,6 +192,7 @@ COMMANDS = {
     "GIMME_LOGS":log_upload,
     "GIMME_INFO":info_upload,
     "MAN":man,
+    
     #"GLOBAL_BROADCAST":global_broadcast,
     #"LOCAL_BROADCAST":local_broadcast,
     }
@@ -195,6 +203,7 @@ ERROR_CODES = {
     3:"who are you again?",
     4:"you are a client, not a host",
     5:"you are a host, not a client",
+    6:"parameter issue"
 }
 async def main():
     global MESSAGE_QUEUE
