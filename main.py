@@ -29,7 +29,7 @@ async def host_reg(websocket,info=None):
         HOST_REGISTRATION_DICTIONARY[host_id] = a
         HOST_RELATIONAL_DICTIONARY[host_id]=dict()
         log(HOST_REGISTRATION_DICTIONARY[host_id])
-        return 0
+        return 7
 
     return 1
 async def client_reg(websocket, host_id=None):
@@ -43,7 +43,7 @@ async def client_reg(websocket, host_id=None):
         HOST_RELATIONAL_DICTIONARY[host_id][client_id] = websocket
         CLIENT_RELATIONAL_DICTIONARY[client_id] = {host_id:HOST_REGISTRATION_DICTIONARY[host_id]["websocket"]}
         CLIENT_REGISTRATION_DICTIONARY[client_id] = {"websocket":websocket,}
-        return 0
+        return 8
 
     return 2
 async def direct(websocket, message=None):
@@ -60,7 +60,7 @@ async def kick(websocket,client_id=None):
     host_id = str(websocket.id)
     if not host_id in HOST_REGISTRATION_DICTIONARY: return 4
     HOST_RELATIONAL_DICTIONARY[host_id].pop(client_id,None)
-    return 0
+    return 11
 
 async def send(websocket, message=None):
     'message -> uhh, the message? in format fuck-all, to send to clients if you\'re host and vice reversa; strictly speaking not required but like why would you do that; will fail if you\'re crazy'
@@ -73,7 +73,7 @@ async def send(websocket, message=None):
             log(f"sending to {sub_id}")
             await echo(sub_ws,dumps({"type":"message","message":message},ensure_ascii=False))
         log("yey")
-        return 0
+        return 10
 
     return 2
 async def get_hosts(websocket,_=None):
@@ -106,7 +106,7 @@ async def info_change(websocket,info=None):
     if not host_info:return 3
     HOST_REGISTRATION_DICTIONARY[host_id] = {"websocket":websocket,**info}
     log(HOST_REGISTRATION_DICTIONARY[host_id])
-    return 0
+    return 9
 async def disconnect(websocket,message):
     'message -> message to broadcast to everyone who knows you;not required;will not fail no matter what'
     del_id = str(websocket.id)
@@ -175,8 +175,6 @@ async def handle_connection(websocket:ServerConnection):
             res = await COMMANDS[message["type"]](websocket, message.get("message", None))
             if res != 0:
                 await echo(websocket,dumps({"type": "error", "message": ERROR_CODES.get(res, "whar?")}))
-            else:
-                await echo(websocket,dumps({"type": "success", "message": ERROR_CODES[0]}))
     except Exception as e:
         log(f"WS processor ended for {websocket.id}: {e}")
 
@@ -207,7 +205,12 @@ ERROR_CODES = {
     3:"who are you again?",
     4:"you are a client, not a host",
     5:"you are a host, not a client",
-    6:"parameter issue"
+    6:"parameter issue",
+    7:"host_reg_success",
+    8:"client_reg_success",
+    9:"info_changed_success",
+    10:"message_sent_success",
+    11:"kick_success",
 }
 async def main():
     global MESSAGE_QUEUE
