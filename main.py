@@ -94,7 +94,7 @@ async def get_clients(websocket,_=None):
     log("get_clients")
     host_id = str(websocket.id)
     if host_id not in HOST_REGISTRATION_DICTIONARY:return 4
-    result = {"type":"clients","message":list(HOST_RELATIONAL_DICTIONARY[host_id].keys())}
+    result = {"type":"clients","message":'("'+'","'.join(HOST_RELATIONAL_DICTIONARY[host_id].keys())+'")'}
     log(result)
     await echo(websocket,dumps(result,ensure_ascii=False))
     return 0
