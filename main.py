@@ -153,6 +153,7 @@ async def log_upload(websocket,message=None):
 async def info_upload(websocket,_=None):
     'lemme see thiss data'
     res = {
+        "type":"info",
         "HOST_RELATIONAL":HOST_RELATIONAL_DICTIONARY,
         "HOST_REGISTRATION":HOST_REGISTRATION_DICTIONARY,
         "CLIENT_RELATIONAL":CLIENT_RELATIONAL_DICTIONARY,
