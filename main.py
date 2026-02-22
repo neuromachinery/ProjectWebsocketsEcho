@@ -65,7 +65,6 @@ async def kick(websocket,client_id=None):
     if not host_id in HOST_REGISTRATION_DICTIONARY: return 4
     HOST_RELATIONAL_DICTIONARY[host_id].pop(client_id,None)
     return 11
-
 async def send(websocket, message=None):
     'message -> uhh, the message? in format fuck-all, to send to clients if you\'re host and vice reversa; strictly speaking not required but like why would you do that; will fail if you\'re crazy'
     log("send")
@@ -102,7 +101,6 @@ async def get_clients(websocket,_=None):
     log(result)
     await echo(websocket,dumps(result,ensure_ascii=False))
     return 0
-
 async def info_change(websocket,info=None):
     'message -> info json dictionary for yo info in format {"key":"val","key":"val",...};required;will fail if- who tf are you?'
     host_id = str(websocket.id)
@@ -152,14 +150,19 @@ async def log_upload(websocket,message=None):
     return 0
 async def info_upload(websocket,_=None):
     'lemme see thiss data'
-    res = {
-        "type":"info",
-        "HOST_RELATIONAL":HOST_RELATIONAL_DICTIONARY,
-        "HOST_REGISTRATION":HOST_REGISTRATION_DICTIONARY,
-        "CLIENT_RELATIONAL":CLIENT_RELATIONAL_DICTIONARY,
-        "CLIENT_REGISTRATION":CLIENT_REGISTRATION_DICTIONARY
-        }
-    await echo(websocket,dumps(res))
+    r = {"type":"info",}
+    dicts = HOST_RELATIONAL_DICTIONARY,HOST_REGISTRATION_DICTIONARY,CLIENT_RELATIONAL_DICTIONARY,CLIENT_REGISTRATION_DICTIONARY
+    dicts_names = "HOST_RELATIONAL","HOST_REGISTRATION","CLIENT_RELATIONAL","CLIENT_REGISTRATION"
+    m = {
+        ServerConnection:lambda arg: "dont worry about it :3",
+        dict:lambda arg: {k:v if type(v)!=ServerConnection else "dont worry about it :3" for k,v in arg.items()}
+    }
+    for d,d_n in zip(dicts,dicts_names):
+        t = {}
+        for k,v in d.items():
+            t[k]=m[type(v)](v)
+        r[d_n] = t.copy()
+    await echo(websocket,dumps(r))
     return 0
 async def man(websocket,_=None):
     'The Manual. You\'re reading one.'
@@ -174,15 +177,17 @@ connected_websockets = set()
 
 async def handle_connection(websocket:ServerConnection):
     connected_websockets.add(websocket)
-    try:
-        async for message in websocket:
+    async for message in websocket:
+        try:
             log(f"{str(websocket.id)} -> {message}")
             message = loads(message)
             res = await COMMANDS[message["type"]](websocket, message.get("message", None))
             if res != 0:
                 await echo(websocket,dumps({"type": "error", "message": ERROR_CODES.get(res, "whar?")}))
-    except Exception as e:
-        log(f"WS processor ended for {websocket.id}: {e}")
+        except Exception as e:
+            message = f"!!!UWAGA!!! WS processor ended for {websocket.id}: {e} !!!UWAGA!!!"
+            await echo(websocket,dumps({"type":"error","message":ERROR_CODES[12],"error":message}))
+            log(message)
 
 
 COMMANDS = {
@@ -217,6 +222,7 @@ ERROR_CODES = {
     9:"info_changed_success",
     10:"message_sent_success",
     11:"kick_success",
+    12:"I am a dumbass, please inform me ASAP"
 }
 async def main():
     global MESSAGE_QUEUE
